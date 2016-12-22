@@ -1,0 +1,120 @@
+#!/bin/bash
+
+#
+# this script scans system log files to find pxeboot events, e.g.,
+# dhcp assignment, tftp and http gets
+#
+# finding are sent by UDP to a listener that can track the imaging progress
+#
+
+unset BACKFILL FAKE
+
+# find our active IP address
+ipaddr=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')
+
+# where to send data 
+host=${host:-10.100.182.16}
+port=${port:-9999}
+
+# look for the kickstart file being retrieved
+http_filter() {
+   awk -v ip=$ipaddr '
+   function ts(s) {
+       s=substr(s, 2)
+       s=gensub(/\//, " ", "g", s)
+       s=gensub(/\:/, " ", "", s)
+       cmd="date -d \047" s "\047 +%s";
+       #return cmd
+       cmd | getline result;
+       return result
+   }
+   $7 ~ /\/kickstart\/cfg/ {
+      f=gensub(/.*\//, "", "g", $7)
+      t=ts($4); print t, ip, "HTTP", $1, f;
+   }
+' 
+}
+
+# dhcp offers
+dhcp_filter() {
+    awk -v ip=$ipaddr '
+        function ts(m, d, t) {
+            cmd = "date -d \047" m " " d " " t "\047 +%s";
+            cmd | getline result
+            return result
+        }
+        $6 ~ /DHCPDISCOVER/ { t=ts($1, $2, $3); print t, ip, $6, $8;  fflush() }
+        $6 ~ /DHCPOFFER/    { t=ts($1, $2, $3); print t, ip, $6, $10, $8 ; fflush() }
+	'
+}
+
+# find pxe linux file load events
+pxe_filter() {
+    awk -v ip=$ipaddr '
+        function ts(m, d, t) {
+            cmd = "date -d \047" m " " d " " t "\047 +%s";
+            cmd | getline result
+            return result
+        }
+        $10 ~ /pxelinux.cfg\/01/ {
+            mac = gensub(/-/, ":", "g", substr($10, 17));
+            t = ts($1, $2, $3)
+            #print $1, $2, $3, $4, "PXEFILE", mac;  fflush() 
+            print t, ip, "PXEFILE", mac;  fflush() 
+        }
+        '
+}
+
+fail() {
+  echo -e >&2 "\nError: $*\n"
+  exit 1
+}    
+
+while getopts "bfh:p:" opt; do
+  case $opt in
+      b) BACKFILL=true ;;
+      f) FAKE=true ;;
+      h) host=$OPTARG ;;
+      p) port=$OPTARG ;;
+      \?) fail "invalid option: -$OPTARG" ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
+if [[ $FAKE ]]; then
+    echo $(date +%s) $ipaddr $@ > /dev/udp/$host/$port
+    exit
+fi
+
+[[ $UID == 0 ]] || fail "must be run as root" 
+
+cat /var/log/httpd/access_log	2> /dev/null	| http_filter > /dev/udp/$host/$port
+exit
+cat /var/log/httpd/access_log	2> /dev/null	| http_filter 
+exit
+tail -F /var/log/httpd/access_log	2> /dev/null	| http_filter 
+exit
+
+if [[ $BACKFILL ]]; then
+	echo "DHCP"
+	cat /var/log/dhcpd.log 		| dhcp_filter > /dev/udp/$host/$port 
+	echo "DMSG"
+	cat /var/log/messages		| pxe_filter  > /dev/udp/$host/$port
+	echo "HTTP"
+	cat /var/log/httpd/access_log	| http_filter > /dev/udp/$host/$port
+	exit
+fi
+
+tail -F /var/log/dhcpd.log 		2> /dev/null	| dhcp_filter > /dev/udp/$host/$port &
+tail -F /var/log/messages		2> /dev/null	| pxe_filter  > /dev/udp/$host/$port &
+tail -F /var/log/httpd/access_log	2> /dev/null	| http_filter > /dev/udp/$host/$port &
+
+function cleanup() {
+    echo "Cleaning up...."
+    pkill -P $$
+}
+
+trap cleanup INT
+wait
+

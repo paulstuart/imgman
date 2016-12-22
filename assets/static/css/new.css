@@ -1,0 +1,294 @@
+
+h1.login {
+    text-align:  center;
+    /*
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    padding-top: 20px;
+    display:inline;
+    */
+    font-family: Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-weight: 500;
+}
+
+h2.login {
+    text-align:  center;
+    font-family: Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-weight: 250;
+}
+
+
+.contents {
+    margin: 0.4em 7.0em;
+    min-width: 300px;
+    text-align: center;
+    margin-bottom: 50px;
+    line-height: 1.6em;
+    padding: 3.0em 4.5em 0;
+}
+
+table, th, td { 
+   border: 1px solid black;
+}
+/*
+*/
+
+.bodybox {
+    margin: 0em 4em ;
+}
+
+.numbin {
+    text-align: right;
+}
+
+.delete-button {
+    visibility: hidden;
+}
+
+/*
+.using-button {
+    visibility: hidden;
+}
+*/
+
+/*
+.button.disabled {
+  opacity: 0.5; 
+  cursor: not-allowed;
+}
+*/
+
+.rma-form {
+    margin: 20px;
+}
+
+hr.menubar {
+    border: 0;
+    height: 2px;
+    background: #333;
+    background-image: linear-gradient(to right, #ccc, #333, #ccc);
+}
+
+/*
+th.nobreak {
+*/
+th {
+    white-space: nowrap;
+}
+
+.sizecol {
+    width: 2em;
+    overflow: hidden;
+} 
+
+.mytitle {
+    width: 100%;
+    text-align: center;
+}
+
+/*
+tr:nth-child(even) {background: #CCC}
+tr:nth-child(odd) {background: #FFF}
+
+table {
+    background-color: pink;
+    bgcolor: pink;
+}
+
+tr {
+    background-color: pink;
+}
+*/
+
+table.racked { 
+    border-collapse: collapse; 
+    border: none;
+    table-layout: fixed;
+}
+
+table.racked tbody tr {
+   line-height: 1.2em;
+}
+
+table.racked tbody tr:nth-child(odd) {
+   background-color: #ccc;
+}
+
+.bogusbogus {
+     /* Chrome, Safari, Opera prefix */
+     -webkit-column-width: 2em;
+    /* Mozilla Firefox prefix */
+    -moz-column-width: 2em;
+}
+
+.rcell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /*
+    background-color: red;
+    column-width: 2em;
+    */
+    margin: 0;
+    padding: 0;
+}
+
+
+/*
+tr.rackrow:nth-child(3) { border: solid thin; }
+*/
+/*
+tr.rackrow { border: solid thin; }
+*/
+
+.racktitle {
+    text-align: center;
+    font-weight: bold;
+}
+
+.cellok {
+    width: 2em;
+}
+
+.rackwrap {
+    /*
+    margin-left: 2em;
+    margin-right: 2em;
+    padding-left: 2em;
+    padding-right: 2em;
+    margin: 0em 2em 1em 2em;
+
+    width: 34em;
+
+    background-color: red;
+    */
+
+    float: left;
+    min-height: 64em;
+}
+
+table.racked th {
+    text-align: center;
+}
+
+.rackview {
+    text-align: center;
+    width: 95%;
+    margin: auto;
+    /*
+    background-color: pink;
+    float: left;
+    margin: 3em 0em;
+    display:inline-block;
+    */
+}
+
+.th-ru {
+    width: 3em;
+    /*
+    background: #333;
+    width: 10px;
+    width: 1em;
+    */
+}
+
+.rackheight0 {
+    /*
+    line-height: 1em;
+    */
+    display: none;
+}
+
+.rackheight1 {
+    height: 1.2em;
+}
+
+    /*
+    background-color: pink;
+    border: 3px solid black;
+    padding-top: 10px;
+    */
+/*
+.rackheight2 > td {
+    height: 2.9em;
+}
+    */
+
+    /*
+    height: 4.8em;
+    background-color: yellow;
+    line-height: 1em;
+    */
+.rackheight2 {
+    height: 2.4em;
+}
+
+.rackheight3 {
+    height: 3.6em;
+}
+.rackheight4 {
+    height: 4.8em;
+}
+.rackheight5 {
+    height: 6em;
+}
+.rackheight6 {
+    height: 7.2em;
+}
+.rackheight7 {
+    height: 8.4em;
+}
+.rackheight8 {
+    height: 9.6em;
+}
+.rackheight9 {
+    height: 10.8em;
+}
+.rackheight10 {
+    /*
+     border-style: solid;
+     */
+    height: 12em;
+}
+
+.navbar-right {
+    margin-right: 3em;
+}
+
+#homepage table {
+    width: auto;
+    margin: auto;
+}
+
+#homepage table {
+    width: auto;
+}
+/*
+#homepage table tbody td {
+    background-color: pink;
+}
+
+
+#homepage th {
+    background-color: blue;
+    width: auto;
+}
+*/
+
+#homepage td:nth-child(2) {
+    text-align: right;
+}
+
+#homepage td:nth-child(3) {
+    text-align: right;
+}
+
+.badentry {
+    background-color: red;
+}
+
+.errmsg {
+    background-color: red;
+    text-align: center;
+    font-weight: bold;
+    font-size: 250%;
+}

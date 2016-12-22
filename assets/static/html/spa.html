@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Man</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/new.css">
+
+    <script>
+    window.user_apikey = ''; // all changeable actions require this key
+    </script>
+
+    <script src="static/js/jquery-2.0.3.js"></script>
+    <script src="static/js/lodash.js"></script>
+    <script src="static/js/bootstrap.js"></script>
+    <script src="static/js/vue.js"></script>
+    <script src="static/js/vue-router.js"></script>
+    <script src="static/js/vuex.js"></script>
+    <script src="static/js/util.js"></script>
+    <script src="static/js/lodash.js"></script>
+
+</head>
+<body>
+
+    <div id="myapp">
+        <main-menu></main-menu>
+        <div class="bodybox">
+        <router-view>Loading...</router-view>
+        </div>
+    </div>
+    <div id="log"/>
+    
+</body>
+</html>
+
+
+<script type="text/x-template" id="tmpl-main-menu">
+    <div>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav navbar-right">
+            <li v-show="! $store.getters.loggedIn"><router-link to='/auth/login'>Log in</router-link></li>
+		<li class="dropdown" v-show="$store.getters.loggedIn">
+		    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+			{{ $store.getters.userName }} <span class="caret"></span></a>
+		    <ul class="dropdown-menu">
+			<li><router-link to='/auth/logout' >Logout</router-link></li>
+		    </ul>
+		</li>
+        </ul>
+          <ul class="nav navbar-nav">
+            <li class="active"><router-link :to="{ path: '/'}">Home <span class="sr-only">(current)</span></router-link></li>
+          </ul>
+          <ul class="nav navbar-nav">
+	    <li><router-link :to="{ path: '/image' }">Image Server</router-link></li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin<span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><router-link to="{ path: '/user/list' }">User List</router-link></li>
+                <li><router-link to="{ path: '/admin/dcman' }">DCMan Settings</router-link></li>
+                <li><router-link to="{ path: '/audit/log' }">Audit Log</router-link></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+        <hr class="menubar"/>
+    </div>
+</script>
+
+
+
+<!-- common table template -->
+<script type="text/x-template" id="tmpl-base-table">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th v-for="key in columns"
+          @click.prevent="sortBy(key)"
+          :class="{active: sortKey == key}">
+          {{ key[0].toUpperCase() + key.slice(1) }}
+          <span class="arrow"
+            :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+          </span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="entry in rows">
+        <td v-for="key in columns">
+           <template v-if="linkable(key)">
+              <router-link :to="linkpath(entry, key)">{{ entry[key] }}</router-link>
+           </template>
+           <template v-else>
+               <template v-if="linkable(key)">
+                  <router-link :to="linkpath(entry, key)">{{ entry[key] }}</router-link>
+               </template>
+              {{ entry[key] }}
+           </template>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</script>
+
+
+<script type="text/x-template" id="tmpl-audit-log">
+    <div>
+        <h1 class="mytitle">Audit Log</h1>
+        <label for="query">Filter</label>
+        <input id="query" name="query" v-model="searchQuery">
+
+        <label for="pagerows">page size</label>
+        <select id="pagerows" v-model="pagerows">
+            <option v-for="size in sizes" v-bind:value="size">
+                {{ size }}
+            </option>
+        </select>
+        <paged-grid 
+            :data="rows | filterBy searchQuery"
+            :columns="columns" 
+            :linkable="linkable"
+            :linkPath="linkpath"
+            :start-row="startRow" 
+            :rows-per-page="rowsPerPage">
+        </paged-grid>
+    </div>
+</script>
+
+
+<script type="text/x-template" id="tmpl-user-list">
+    <div>
+        <h1 class="mytitle">Our Users</h1>
+        <paged-grid 
+            :data="rows | filterBy searchQuery" 
+            :columns="columns" 
+            :linkable="linkable"
+            :linkPath="linkpath"
+            :start-row="startRow" 
+            :rows-per-page="rowsPerPage">
+        </paged-grid>
+    </div>
+</script>
+
+<script type="text/x-template" id="tmpl-user-edit">
+    <div id="user-edit">
+
+        <h1 class="mytitle">Edit User</h1>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <label for="login" class="control-label col-xs-2">Login</label>
+                <div class="col-xs-2">
+                    <input type="text" class="form-control" id="login" v-model="User.Login">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="first" class="control-label col-xs-2">First Name</label>
+                <div class="col-xs-2">
+                    <input type="text" class="form-control" id="first" v-model="User.First">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="server-sn" class="control-label col-xs-2">Last Name</label>
+                <div class="col-xs-2">
+                    <input type="text" class="form-control" id="server-sn" v-model="User.Last">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="level" class="control-label col-xs-2">Admin Level</label>
+                <div class="col-xs-2">
+                    <select id="level" name="level" v-model="User.Level">
+                    <option v-for="level in levels" v-bind:value="level.Level">
+                        {{ level.Label }}
+                    </option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-xs-offset-1 col-xs-1">
+                    <button class="btn" type="cancel" v-on:click.prevent="showList">Cancel</button>
+                </div>
+                <div class="col-xs-1" v-if="User.USR">
+                    <button class="btn btn-primary" v-on:click.prevent="saveSelf" v-if="User.USR">Update</button>
+                    <button class="btn btn-primary" v-on:click.prevent="addSelf" v-else>Add</button>
+                </div>
+                <div class="col-xs-1" v-if="User.USR">
+                    <button class="btn" v-on:click.prevent="deleteSelf">Delete</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</script>
+
+
+<script type="text/x-template" id="tmpl-user-login">
+    <div id="login" class="layout">
+        <div class="header">
+            <h2 class="login">Enter your Okta Login Credentials</h2>
+        </div>
+        <div class="invalid_login" v-if="errorMsg">{{errorMsg}}</div>
+
+        <div class="contents">
+    
+            <form class="form-horizontal">
+                <fieldset class="col-xs-12">
+                    <div class="form-group">
+                        <label for="username" class="control-label col-xs-3">Username</label>
+                        <div class="col-xs-3">
+                            <input type="text" class="form-control" id="username" v-model="username" placeholder="{{placeholder}}" required autofocus/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="control-label col-xs-3">Password</label>
+                        <div class="col-xs-3">
+                            <input type="password" class="form-control" id="password" v-model="password"/>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="form-group">
+                    <div class="col-xs-offset-3 col-xs-1">
+                        <button class="btn" v-on:click.prevent="cancel">Cancel</button>
+                    </div>
+                    <div class="col-xs-1">
+                        <button id="use-btn" class="btn btn-primary" v-on:click.prevent="login">Login</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</script>
+
+
+<script type="text/x-template" id="tmpl-user-logout">
+    <div id="logout">
+        <h3>Really log out?</h3>
+        <div class="form-group">
+            <div class="col-xs-offset-2 col-xs-1">
+                <button class="btn" v-on:click.prevent="cancel">Cancel</button>
+            </div>
+            <div class="col-xs-1">
+                <button id="use-btn" class="btn btn-primary" v-on:click.prevent="logout">Logout</button>
+            </div>
+        </div>
+    </div>
+</script>
+
+
+<script type="text/x-template" id="tmpl-image-page">
+<div id="imgpage">
+    <h1 class="mytitle">Reimage Server</h1>
+        <div class="errmsg" v-if="ErrorMsg">{{ErrorMsg}}</div>
+        <form role="form" class="form-horizontal">
+            <fieldset class="col-xs-12">
+                <div class="form-group">
+                    <label for="STI" class="control-label col-xs-2">Site</label>
+                    <div class="col-xs-2">
+                        <select id="STI" v-model="STI" number>
+                            <option v-for="site in sites" v-bind:value="site.STI">
+                                {{ site.Name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="STI" class="control-label col-xs-2">PXE Boot</label>
+                    <div class="col-xs-2">
+                        <select id="STI" v-model="menu">
+                            <option v-for="menu in menus" v-bind:value="menu">
+                                {{ menu }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="Hostname" class="control-label col-xs-2">Hostname</label>
+                    <div class="col-xs-2">
+                        <input type="text" id="Hostname" v-model="Device.Hostname" pattern=".+" @change="loadSelf" required/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="Rack" class="control-label col-xs-2">Rack</label>
+                    <div class="col-xs-2">
+                        <input type="text" id="Rack" v-model="Device.Rack" readonly/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="RU" class="control-label col-xs-2">Rack Unit</label>
+                    <div class="col-xs-2">
+                        <input type="text" id="RU" v-model="Device.RU" readonly/>
+                    </div>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="Profile" class="control-label col-xs-2">Profile</label>
+                    <div class="col-xs-2">
+                        <input type="text" id="Profile" v-model="Device.Profile" readonly/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="IP" class="control-label col-xs-2">IP</label>
+                    <div class="col-xs-2">
+                        <input type="text" id="IP" v-model="Device.IP" readonly/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="IPMI" class="control-label col-xs-2">IPMI</label>
+                    <div class="col-xs-2">
+                        <input type="text" id="IPMI" v-model="Device.IPMI" readonly/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="MAC" class="control-label col-xs-2">MAC</label>
+                    <div class="col-xs-2">
+                        <input type="text" id="MAC" v-model="Device.MAC" readonly/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="Note" class="control-label col-xs-2">Note</label>
+                    <div class="col-xs-2">
+                        <textarea cols="30" rows="4" id="Note" v-model="Device.Note" readonly></textarea>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="col-xs-12">
+                <div class="form-group">
+                    <div class="col-xs-offset-1 col-xs-1">
+                        <button class="btn" v-on:click.prevent="reset">Cancel</button>
+                    </div>
+                    <div class="col-xs-1">
+                        <button class="btn btn-primary" v-on:click.prevent="reimage" :disabled="notReady">Reimage!</button>
+                    </div>
+                </div>
+            </fieldset>
+
+        </form>
+    </div>
+</script>
+
+
+
+<script type="text/x-template" id="tmpl-paged-grid">
+    <div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th v-for="key in columns"
+                      @click.prevent="sortBy(key)"
+                      v-bind:class="{active: sortKey == key}">
+                      {{ key[0].toUpperCase() + key.slice(1) }}
+                      <span class="arrow" v-bind:class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+                      </span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="rowid(entry)" 
+                    v-for="entry in limitBy"> 
+                    <td v-for="key in columns">
+                       <template v-if="linkable(key)">
+                          <router-link :to="linkpath(entry, key)">{{ entry[key] }}</router-link>
+                       </template>
+                       <template v-else>
+                          {{entry[key] }}
+                       </template>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="page-navigation">
+            <template v-if="data.length > rowsPerPage">
+            <button v-if="rowsPerPage" class="btn" @click=movePages(-1)>Back</button>
+            {{rowStatus}}
+            <button v-if="rowsPerPage" class="btn" @click=movePages(1)>Next</button>
+            </template>
+            <button v-if="canDownload" class="btn download" v-on:click.prevent="download">Download</button>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-template" id="tmpl-paged-slices">
+    <div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th v-for="key in columns"
+                      @click.prevent="sortBy(key)"
+                      v-bind:class="{active: sortKey == key}">
+                      {{ key[0].toUpperCase() + key.slice(1) }}
+                      <span class="arrow" v-bind:class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+                      </span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="row in limitBy"> 
+                    <td v-for="cell in row">
+                        {{ cell }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="page-navigation">
+            <template v-if="data.length > rowsPerPage">
+            <button v-if="rowsPerPage" class="btn" @click=movePages(-1)>Back</button>
+            {{rowStatus}}
+            <button v-if="rowsPerPage" class="btn" @click=movePages(1)>Next</button>
+            </template>
+            <button v-if="canDownload" class="btn download" v-on:click.prevent="download">Download</button>
+        </div>
+    </div>
+</script>
+
+
+
+<script type="text/x-template" id="tmpl-home-page">
+    <div>
+        <h1 class="mytitle">Image Status</h1>
+
+        <label for="query">Filter</label>
+        <input id="query" name="query" v-model="searchQuery">
+
+        <label for="pagerows">page size</label>
+        <select id="pagerows" v-model="pagerows">
+            <option v-for="size in sizes" v-bind:value="size">
+                {{ size }}
+            </option>
+        </select>
+
+        <paged-grid 
+            :data="rows"
+            :columns="columns" 
+            :linkable="linkable"
+            :linkPath="linkpath"
+            :start-row="startRow" 
+            :rows-per-page="rowsPerPage">
+        </paged-grid>
+    </div>
+</script>
+
+<!-- instantiate our components -->
+
+<script src="static/js/spa.js"></script>
