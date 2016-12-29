@@ -215,8 +215,16 @@ var get = function(url) {
       // This is called even on 404 etc, so check the status
       if (req.status == 200) {
         // Resolve the promise with the response text
+        if (req.responseText.length > 0) {
+/*
         var obj = JSON.parse(req.responseText)
         resolve(obj)
+*/
+        	resolve(JSON.parse(req.responseText))
+	}
+	else {
+        	resolve(null)
+	}
       }
       else {
         // Otherwise reject with the status text
@@ -480,22 +488,17 @@ var auditLog = Vue.component('audit-log', {
         return {
             columns: ['TS', 'Site', 'Hostname', 'Log', 'User'],
             rows: [],
+	    url: "api/audit/",
         }
     },
-    route: { 
-          data: function (transition) {
-              return {
-                rows: getAuditLog(), 
-              }
-          }
+    created: function() {
+	this.loadData()
     },
     methods: {
         loadData: function() {
-            var self = this;
-
-            fetchData(this.url, function(data) {
+            get(this.url).then(data => {
                 if (data) {
-                    self.rows = data
+                    this.rows = data
                     console.log("loaded", data.length, "ip records")
                 }
             })
@@ -1046,7 +1049,6 @@ var homePage = Vue.component('home-page', {
     data: function() {
         return {
             columns: ['TS', 'Host', 'Kind', 'Msg'],
-            //rows: [],
             url: "api/site/",
         }
     },
@@ -1062,19 +1064,7 @@ var homePage = Vue.component('home-page', {
     },
     methods: {
         loadData: function() {
-		/*
-            var self = this;
-
-            fetchData(this.url, function(data) {
-                if (data) {
-                    self.rows = data
-                    console.log("loaded", data.length, "ip records")
-                }
-            })
-	    */
-	    //get("api/events").then(e => this.rows = e)
 	    get("api/events").then(e => {
-		    console.log("E:", e);
 		    this.rows = e
 	    })
         },
@@ -1088,7 +1078,6 @@ var homePage = Vue.component('home-page', {
 })
 // Assign the new router
 //var router = new VueRouter({history: true})
-//var router = new VueRouter()
 
 const routes = [
 { path: "/auth/login",  	component: userLogin },

@@ -56,9 +56,9 @@
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin<span class="caret"></span></a>
               <ul class="dropdown-menu">
-                <li><router-link to="{ path: '/user/list' }">User List</router-link></li>
-                <li><router-link to="{ path: '/admin/dcman' }">DCMan Settings</router-link></li>
-                <li><router-link to="{ path: '/audit/log' }">Audit Log</router-link></li>
+                <li><router-link :to="{ path: '/user/list' }">User List</router-link></li>
+                <li><router-link :to="{ path: '/admin/dcman' }">DCMan Settings</router-link></li>
+                <li><router-link :to="{ path: '/audit/log' }">Audit Log</router-link></li>
               </ul>
             </li>
           </ul>
@@ -116,7 +116,7 @@
             </option>
         </select>
         <paged-grid 
-            :data="rows | filterBy searchQuery"
+            :data="filteredRows"
             :columns="columns" 
             :linkable="linkable"
             :linkPath="linkpath"
