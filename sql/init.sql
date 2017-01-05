@@ -1,4 +1,6 @@
 
+drop table if exists sites;
+
 DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users (
     usr integer primary key,
@@ -14,7 +16,6 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 attach '../dcman/data.db' as dcman;
-drop table if exists sites;
 create table sites as select * from dcman.sites;
 insert into users select * from dcman.users;
 detach database dcman;
