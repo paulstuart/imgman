@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# look up MAC from ip in dhcpd leases file
+
+[[ -z $1 ]] && echo "Usage: $0 <ip>" && exit 1
+
+grep -E 'lease|ethernet' /var/lib/dhcpd/dhcpd.leases 		| \
+	sed -e 's/lease //g' -e 's/\s*hardware ethernet\s*//g'	| \
+	tr '{\n\s' ' ' | tr ';' '\n'				| \
+	awk '{print $2,$1}' 					| \
+	awk -v ip=$1 '$2 == ip'					| \
+	tail -1 						| \
+	awk '{print $1}'

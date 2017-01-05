@@ -1,0 +1,12 @@
+[Unit]
+Description=Notify Imgman of boot/shutdown evetns
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/imgman start
+ExecStop=/usr/local/bin/imgman stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
