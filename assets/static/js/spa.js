@@ -1,5 +1,20 @@
 'use strict';
 
+var toISOString = function(ts) {
+    function pad(number) {
+      return (number < 10) ? '0' + number : number;
+    }
+    return ts.getUTCFullYear() +
+        '-' + pad(ts.getUTCMonth() + 1) +
+        '-' + pad(ts.getUTCDate()) +
+        'T' + pad(ts.getUTCHours()) +
+        ':' + pad(ts.getUTCMinutes()) +
+        ':' + pad(ts.getUTCSeconds()) +
+        '.' + (ts.getUTCMilliseconds() / 1000).toFixed(3).slice(2, 5) +
+        'Z';
+}
+
+
 if (!Date.prototype.toISOString) {
   (function() {
 
@@ -457,7 +472,6 @@ Vue.component('main-menu', {
                 console.log('initiate search for:',text)
                 if (this.$route.name == 'search') {
                     // already on search page
-                    //this.$dispatch('search-again', text)
                     return
                 }
                 router.go({name: 'search', params: { searchText: text }})
@@ -470,7 +484,6 @@ Vue.component('main-menu', {
                 if (tuple[0] != 'userinfo') continue;
                 if (tuple[1].length == 0) break; // no cookie value so don't bother
                 var user = JSON.parse(atob(tuple[1]));
-                //this.$dispatch('user-info', user)
                 break
             }
         },
@@ -667,27 +680,13 @@ var userLogin = Vue.component('user-login', {
             router.go('/')
         },
         login: function(ev) {
-            var url = '/api/login';
             var data = {Username: this.username, Password: this.password};
-            var self = this;
-            var results = function(xhr) {;
-                if (xhr.readyState == 4) {
-                    if (xhr.status == 200) {
-                        var user = JSON.parse(xhr.responseText)
-                        self.$dispatch('user-auth', user)
-                        router.go('/')
-                        return
-                    }
-                    console.log('login resp:' + xhr.responseText)
-                    if (xhr.responseText.length > 0) {
-                        var msg = JSON.parse(xhr.responseText)
-                        self.errorMsg = msg.Error
-                    }
-                }
-            };
-            postIt(url, data, results)
-            ev.preventDefault()
-        },
+            var url = '/api/login';
+            posty(url, data).then(user => {
+                this.$store.commit("setUser", user)
+                router.push("/")
+            }).catch(msg => this.errorMsg = msg.Error)
+	},
     },
 })
 
@@ -699,8 +698,9 @@ var userLogout = Vue.component('user-logout', {
             router.go('/')
         },
         logout: function(ev) {
-            this.$dispatch('logged-out')
-            router.go('/')
+            console.log("logout button selected")
+            this.$store.commit("logOut")
+            router.push("/auth/login")
         },
     }
 })
@@ -952,7 +952,7 @@ var imagePage = Vue.component('image-page', {
 	    }
             posty(url, data).then(resp => {
 		const obj = {
-			TS: Date().toISOString(),   
+			TS: toISOString(new Date()),   
 			Host: this.Device.Hostname,
 			Kind: "PXE boot initiated",
 			Msg: "image: " + this.menu,

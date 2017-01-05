@@ -90,6 +90,7 @@ func absExecPath() (name string, err error) {
 }
 
 func pxeExec(site, ipmi, image string) {
+	log.Println("***** PXE EXEC HOST:", ipmi)
 	host, ok := pxeHosts[site]
 	if !ok {
 		log.Printf("host not found for site:%s\n", site)
@@ -97,7 +98,7 @@ func pxeExec(site, ipmi, image string) {
 	}
 	log.Printf("pxeboot site:%s ssh:%s impi:%s image:%s\n", site, host, ipmi, image)
 	cmd := "sudo /usr/local/bin/pxeboot -m " + image + " " + ipmi
-	out, err := sshcmd(hostname, cmd, sshTimeout)
+	out, err := sshcmd(host, cmd, sshTimeout)
 	if err != nil {
 		log.Println("pxeboot error:", err)
 	}
