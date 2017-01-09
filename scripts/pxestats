@@ -20,19 +20,25 @@ port=${port:-9999}
 http_filter() {
    #awk '$7 ~ /\/kickstart\/cfg/ { print "-", "1.2.3.4", "HTTP", $7, "blah" }'
    #exit
-   awk -v ip=$ipaddr '
+   #awk -v ip=$ipaddr '
+   awk '
    function ts(s) {
        s=substr(s, 2)
        s=gensub(/\//, " ", "g", s)
        s=gensub(/\:/, " ", "", s)
        cmd="date -d \047" s "\047 +%s";
-       #return cmd
+       cmd | getline result;
+       return result
+   }
+   function mac(s) {
+       cmd="/usr/local/bin/ip2mac" s;
        cmd | getline result;
        return result
    }
    $7 ~ /\/kickstart\/cfg/ {
       f=gensub(/.*\//, "", "g", $7)
-      t=ts($4); print t, ip, "HTTP", $1, f;
+      m=mac($1)
+      t=ts($4); print t, m, "HTTP", $1, f;
    }
 ' 
 }

@@ -62,8 +62,8 @@ var (
 )
 
 const (
-	logLayout  = "2006-01-02 15:04:05.999"
 	dateLayout = "2006-01-02"
+	logLayout  = "2006-01-02 15:04:05.999"
 	timeLayout = "2006-01-02 15:04:05"
 )
 
@@ -430,7 +430,7 @@ func process(s string) {
 		fmt.Println("HTTP HIT:", fields)
 		// 1480966729 10.110.192.11 HTTP 10.110.63.227 centos7-platform9.cfg
 		kind = "http"
-		ip = fields[3]
+		hostname = getMacHost(fields[1])
 		msg = "kickstart: " + fields[4]
 	case "PXEFILE":
 		// PXEFILE b8:ca:3a:63:f7:d0
