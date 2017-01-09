@@ -143,7 +143,7 @@ func apiPXE(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		pxe := new(pxeRequest)
 		loadObj(r, pxe)
-		fmt.Println("PXE:", pxe)
+		fmt.Println("PXE BOOT REQUEST:", pxe)
 		user, err := apiUser(r)
 		if err != nil {
 			log.Println("AUTH ERROR:", err)
@@ -159,11 +159,15 @@ func apiPXE(w http.ResponseWriter, r *http.Request) {
 			Log:      &msg,
 			TS:       time.Now(),
 		}
+		fmt.Println("SET MAC HOST")
 		setMacHost(*pxe.Device.MAC, *pxe.Device.Hostname)
+		fmt.Println("MAC HOST SET")
 
 		if err := dbAdd(a); err != nil {
+			log.Println("DB ERROR:", err)
 			jsonError(w, err, http.StatusInternalServerError)
 		} else {
+			fmt.Println("PRE EXEC")
 			if pxe.Device.Note != nil && len(*pxe.Device.Note) > 0 {
 				note := *pxe.Device.Note + "\n" + msg
 				pxe.Device.Note = &note
@@ -171,6 +175,7 @@ func apiPXE(w http.ResponseWriter, r *http.Request) {
 			} else {
 				pxe.Device.Note = &msg
 			}
+			fmt.Println("GO EXEC")
 			pxeExec(pxe.Site, *pxe.Device.IPMI, pxe.Image)
 			sendJSON(w, pxe.Device)
 		}
