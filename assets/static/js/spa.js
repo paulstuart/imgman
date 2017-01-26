@@ -654,6 +654,9 @@ var userEdit = Vue.component('user-edit', {
                     posty(this.url + this.User.USR, this.User).then(this.showList)
             }
         },
+        deleteSelf: function() {
+            posty(this.url + this.User.USR, null, "DELETE").then(this.showList)
+        },
     },
 })
 
