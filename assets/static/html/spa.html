@@ -57,6 +57,7 @@
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin<span class="caret"></span></a>
               <ul class="dropdown-menu">
                 <li><router-link :to="{ path: '/user/list' }">User List</router-link></li>
+                <li><router-link :to="{ path: '/site/list' }">Site List</router-link></li>
                 <li><router-link :to="{ path: '/admin/dcman' }">DCMan Settings</router-link></li>
                 <li><router-link :to="{ path: '/audit/log' }">Audit Log</router-link></li>
               </ul>
@@ -129,12 +130,13 @@
 
 <script type="text/x-template" id="tmpl-user-list">
     <div>
-        <h1 class="mytitle">Our Users</h1>
+        <h1 class="mytitle">ImgMan Users</h1>
+        <button class="btn" v-if="$store.getters.canEdit" v-on:click.prevent="addUser">Add User</button>
         <paged-grid 
-            :data="rows | filterBy searchQuery" 
+            :data="filteredRows" 
             :columns="columns" 
             :linkable="linkable"
-            :linkPath="linkpath"
+            :linkpath="linkpath"
             :start-row="startRow" 
             :rows-per-page="rowsPerPage">
         </paged-grid>
@@ -147,9 +149,9 @@
         <h1 class="mytitle">Edit User</h1>
         <form class="form-horizontal">
             <div class="form-group">
-                <label for="login" class="control-label col-xs-2">Login</label>
+                <label for="email" class="control-label col-xs-2">Email</label>
                 <div class="col-xs-2">
-                    <input type="text" class="form-control" id="login" v-model="User.Login">
+                    <input type="text" class="form-control" id="email" v-model="User.Email">
                 </div>
             </div>
             <div class="form-group">
@@ -178,11 +180,13 @@
                 <div class="col-xs-offset-1 col-xs-1">
                     <button class="btn" type="cancel" v-on:click.prevent="showList">Cancel</button>
                 </div>
-                <div class="col-xs-1" v-if="User.USR">
-                    <button class="btn btn-primary" v-on:click.prevent="saveSelf" v-if="User.USR">Update</button>
-                    <button class="btn btn-primary" v-on:click.prevent="addSelf" v-else>Add</button>
+                <div class="col-xs-1" v-if="$store.getters.canEdit">
+                    <button class="btn btn-primary" v-on:click.prevent="saveSelf">
+                    <template v-if="User.USR">Update</template>
+                    <template v-else>Add</template>
+                    </button>
                 </div>
-                <div class="col-xs-1" v-if="User.USR">
+                <div class="col-xs-1" v-if="$store.getters.canEdit && User.USR">
                     <button class="btn" v-on:click.prevent="deleteSelf">Delete</button>
                 </div>
             </div>
@@ -445,6 +449,69 @@
         </paged-grid>
     </div>
 </script>
+
+
+<script type="text/x-template" id="tmpl-pxe-hosts">
+    <div>
+        <h1 class="mytitle">PXE Hosts</h1>
+
+        <label for="query">Filter</label>
+        <input id="query" name="query" v-model="searchQuery">
+
+        <label for="pagerows">page size</label>
+        <select id="pagerows" v-model="pagerows">
+            <option v-for="size in sizes" v-bind:value="size">
+                {{ size }}
+            </option>
+        </select>
+        <button class="btn" v-if="$store.getters.canEdit" v-on:click.prevent="addSite">Add Site</button>
+        <paged-grid 
+            :data="rows"
+            :columns="columns" 
+            :linkable="linkable"
+            :linkpath="linkpath"
+            :start-row="startRow" 
+            :rows-per-page="rowsPerPage">
+        </paged-grid>
+    </div>
+</script>
+
+<script type="text/x-template" id="tmpl-pxe-edit">
+    <div id="pxe-edit">
+
+        <h1 class="mytitle">Edit Site PXE Host</h1>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <label for="sitename" class="control-label col-xs-2">Site Name</label>
+                <div class="col-xs-2">
+                    <input type="text" class="form-control" id="sitename" v-model="Site.Sitename">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="hostname" class="control-label col-xs-2">Hostname</label>
+                <div class="col-xs-2">
+                    <input type="text" class="form-control" id="hostname" v-model="Site.Hostname">
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-xs-offset-1 col-xs-1">
+                    <button class="btn" type="cancel" v-on:click.prevent="showList">Cancel</button>
+                </div>
+                <div class="col-xs-1">
+                    <button class="btn btn-primary" v-on:click.prevent="saveSelf">
+			<template v-if="Site.ID">Update</template>
+			<template v-else>Add</template>
+			</button>
+                    <button class="btn btn-primary" v-on:click.prevent="addSelf" v-else>Add</button>
+                </div>
+                <div class="col-xs-1" v-if="Site.ID">
+                    <button class="btn" v-on:click.prevent="deleteSelf">Delete</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</script>
+
 
 <!-- instantiate our components -->
 
