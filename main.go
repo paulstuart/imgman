@@ -382,6 +382,9 @@ func getHost(hostname string, sti int64) (interface{}, error) {
 	return device, nil
 }
 
+//
+// process expects string with "TS IP WHAT MAC MSG"
+//
 func process(s string) {
 	log.Println("UDP:", s)
 	if strings.Contains(s, "HTTP") {

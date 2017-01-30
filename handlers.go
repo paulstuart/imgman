@@ -258,6 +258,7 @@ func pxeList(w http.ResponseWriter, r *http.Request) {
 func menuHandler(w http.ResponseWriter, r *http.Request) {
 	site := r.URL.Path
 	if menus, err := menuList(site); err != nil {
+        fmt.Println("menu fetch error:", err)
 		jsonError(w, err, http.StatusInternalServerError)
 	} else {
 		sendJSON(w, menus)

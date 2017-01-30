@@ -499,10 +499,9 @@
                 </div>
                 <div class="col-xs-1">
                     <button class="btn btn-primary" v-on:click.prevent="saveSelf">
-			<template v-if="Site.ID">Update</template>
-			<template v-else>Add</template>
-			</button>
-                    <button class="btn btn-primary" v-on:click.prevent="addSelf" v-else>Add</button>
+                        <template v-if="Site.ID">Update</template>
+                        <template v-else>Add</template>
+                    </button>
                 </div>
                 <div class="col-xs-1" v-if="Site.ID">
                     <button class="btn" v-on:click.prevent="deleteSelf">Delete</button>
