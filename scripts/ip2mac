@@ -2,12 +2,28 @@
 
 # look up MAC from ip in dhcpd leases file
 
-[[ -z $1 ]] && echo >&2 "Usage: $0 <ip>" && exit 1
+[[ -z $1 ]] && echo >&2 "Usage: $(basename $0) <ip>" && exit 1
+
+#arp -an $1 | awk '{print $4}' | sed -e 's/^$/-/g'
+
+arp -ean $1 | tail -1 | head -1  | sed -e "s/.*no match found.*/- - -/" | awk '{print $3}'
+exit
+arp -ean $1 | tail -1 | head -1  | awk '{print $3}' #| sed -e 's/^$/-/g'
+
+exit
 
 grep -E 'lease|ethernet' /var/lib/dhcpd/dhcpd.leases 		| \
 	sed -e 's/lease //g' -e 's/\s*hardware ethernet\s*//g'	| \
 	tr '{\n\s' ' ' | tr ';' '\n'				| \
 	awk '{print $2,$1}' 					| \
-	awk -v ip=$1 '$2 == ip'					| \
+	sed -e '/^[^a-f0-9]/d'
+exit
+
+grep -E 'lease|ethernet' /var/lib/dhcpd/dhcpd.leases 		| \
+	sed -e 's/lease //g' -e 's/\s*hardware ethernet\s*//g'	| \
+	tr '{\n\s' ' ' | tr ';' '\n'				| \
+	awk '{print $2,$1}' 					| \
+	#awk -v ip=$1 '$2 == ip'					| \
 	tail -1 						| \
-	awk '{print $1}'
+	awk '{print $1}'					| \
+	sed -e 's/^$/-/g'	# print dash if no mac found
