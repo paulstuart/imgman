@@ -18,9 +18,6 @@ port=${port:-9999}
 
 # look for the kickstart file being retrieved
 http_filter() {
-   #awk '$7 ~ /\/kickstart\/cfg/ { print "-", "1.2.3.4", "HTTP", $7, "blah" }'
-   #exit
-   #awk -v ip=$ipaddr '
    awk '
    function ts(s) {
        s=substr(s, 2)
@@ -31,14 +28,17 @@ http_filter() {
        return result
    }
    function mac(s) {
-       cmd="/usr/local/bin/ip2mac" s;
+       cmd="/usr/local/bin/ip2mac " s;
        cmd | getline result;
        return result
    }
    $7 ~ /\/kickstart\/cfg/ {
       f=gensub(/.*\//, "", "g", $7)
       m=mac($1)
-      t=ts($4); print t, m, "HTTP", $1, f;
+      t=ts($4)
+      print t, m, "HTTP", $1, f
+      #print t, $1, "HTTP", $1, f
+      #print "T:",t, "M:",m, "H:","HTTP", "1:",$1, "F:",f
    }
 ' 
 }
@@ -78,10 +78,12 @@ fail() {
   exit 1
 }    
 
-while getopts "bfh:p:" opt; do
+cat /var/log/httpd/access_log	| http_filter 
+exit
+
+while getopts "bh:p:" opt; do
   case $opt in
       b) BACKFILL=true ;;
-      f) FAKE=true ;;
       h) host=$OPTARG ;;
       p) port=$OPTARG ;;
       \?) fail "invalid option: -$OPTARG" ;;
@@ -89,11 +91,6 @@ while getopts "bfh:p:" opt; do
 done
 
 shift $((OPTIND-1))
-
-if [[ $FAKE ]]; then
-    echo $(date +%s) $ipaddr $@ > /dev/udp/$host/$port
-    exit
-fi
 
 [[ $UID == 0 ]] || fail "must be run as root" 
 
