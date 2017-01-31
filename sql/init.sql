@@ -74,3 +74,15 @@ BEGIN
         values(NEW.usr, NEW.sti, NEW.hostname, NEW.log)
     ;
 END;
+
+DROP TABLE IF EXISTS events;
+CREATE TABLE events (
+    TS timestamp DEFAULT CURRENT_TIMESTAMP,
+    Host text not null,
+    Kind text,
+    Msg text
+);
+
+drop index if exists events_host;
+create index events_host on events(host,ts);
+

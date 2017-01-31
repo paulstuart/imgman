@@ -38,7 +38,6 @@ var (
 	udpChan    = make(chan []byte, 1024)
 	closer     = make(chan struct{})
 	macHosts   = make(map[string]string)
-	events     = make([]event, 0, 4096)
 	sshTimeout = 20
 	sshUser    string
 	sshKeyFile string
@@ -53,7 +52,6 @@ var (
 	oktaToken  string
 	oktaCookie string
 	oktaHash   string
-	eLock      sync.Mutex
 	pLock      sync.Mutex
 	macLock    sync.Mutex
 	menus      = make(map[string][]string)
@@ -219,9 +217,9 @@ func setMacHost(mac, hostname string) {
 }
 
 func addEvent(e event) {
-	eLock.Lock()
-	events = append(events, e)
-	eLock.Unlock()
+    if err := dbAdd(&e); err != nil {
+        fmt.Println("DB ADD ERR:", err)
+    }
 	sockEcho(e)
 }
 
@@ -434,8 +432,14 @@ func process(s string) {
 		fmt.Println("HTTP HIT:", fields)
 		// 1480966729 10.110.192.11 HTTP 10.110.63.227 centos7-platform9.cfg
 		kind = "http"
-		hostname = getMacHost(fields[1])
-		msg = "kickstart: " + fields[4]
+		hostname = getMacHost(fields[3])
+		msg = "kickstart: " + strings.Join(fields[4:], " ")
+	case "IPMI":
+        // echo "- $HOST IPMI $CMD ${MSG[*]}" > /dev/udp/$IMGMAN_HOST/$IMGMAN_PORT
+		fmt.Println("IPMI HIT:", fields)
+		kind = "ipmi"
+		hostname = fields[1]
+		msg = "ipmi command: " + strings.Join(fields[3:], " ")
 	case "PXEFILE":
 		// PXEFILE b8:ca:3a:63:f7:d0
 		kind = "tftp"

@@ -309,6 +309,9 @@ func apiEvents(w http.ResponseWriter, r *http.Request) {
 			log.Println("events error:", err)
 		}
 	*/
+    o := event{}
+    q := fmt.Sprintf("select %s from %s", o.SelectFields(), o.TableName())
+    dbStreamJSON(w, q)
 }
 
 var webHandlers = []hFunc{

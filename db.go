@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+    "io"
 	"os"
 
 	"github.com/paulstuart/dbutil"
@@ -273,13 +274,6 @@ func dbReplace(o dbutil.DBObject) error {
 }
 
 
-
-func dbStreamJSON(w io.Writer, query string, args ...interface{}) error {
-	if err := readable(); err != nil {
-		return err
-	}
-	return datastore.StreamJSON(w, query, args...)
-}
 func dbStreamCSV(w io.Writer, query string, args ...interface{}) error {
 	if err := readable(); err != nil {
 		return err
@@ -328,3 +322,10 @@ func trimTime(s string) string {
 	return s
 }
 */
+
+func dbStreamJSON(w io.Writer, query string, args ...interface{}) error {
+	if err := readable(); err != nil {
+		return err
+	}
+	return datastore.StreamJSON(w, query, args...)
+}

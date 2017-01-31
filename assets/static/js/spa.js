@@ -137,9 +137,9 @@ const store = new Vuex.Store({
             state.active = false
             state.USR = null
         },
-	addUpdate(state, update) {
-	    state.updates.unshift(update)
-	},
+        addUpdate(state, update) {
+            state.updates.unshift(update)
+        },
     },
 })
 
@@ -1139,8 +1139,12 @@ var homePage = Vue.component('home-page', {
     },
     methods: {
         loadData: function() {
-	    get("api/events").then(e => {
-		    this.rows = e
+	    get("api/events").then(events => {
+            for (let e of events) {
+                this.$store.commit("addUpdate", e)
+                //console.log("E:",e);
+            }
+		    //this.$store.getters.updates
 	    })
         },
         linkable: function(key) {

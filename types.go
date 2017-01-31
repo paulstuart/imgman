@@ -143,8 +143,8 @@ type pxeHost struct {
 }
 
 type event struct {
-	TS   time.Time `sql:"ts" table:"pxehosts"`
-	Host string    `sql:"host"`
-	Kind string    `sql:"kind"` // dhcp, tftp, http
-	Msg  string    `sql:"msg"`
+	TS   time.Time `sql:"TS" table:"events"`
+	Host string    `sql:"Host"`
+	Kind string    `sql:"Kind"` // dhcp, tftp, http
+	Msg  string    `sql:"Msg"`
 }
