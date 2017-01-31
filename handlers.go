@@ -321,9 +321,9 @@ var webHandlers = []hFunc{
 	{"/api/host/", hostInfo},
 	{"/api/menus/", menuHandler},
 	{"/api/site/", siteList},
-	{"/api/pxehost/", pxeList},
+	{"/api/pxehost/", MakeREST(pxeHost{})},
 	{"/api/pings", bulkPings},
 	{"/api/pxeboot", apiPXE},
-	//{"/api/user/", MakeREST(user{})},
+	{"/api/user/", MakeREST(user{})},
 	{"/", homePage},
 }

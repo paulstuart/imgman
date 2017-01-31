@@ -30,7 +30,8 @@ delete from users where usr > 20;
 
 DROP TABLE IF EXISTS pxehosts;
 CREATE TABLE IF NOT EXISTS pxehosts (
-    sitename text primary key,
+    id integer primary key,
+    sitename text,
     hostname text
 );
 
@@ -40,6 +41,7 @@ insert into pxehosts(sitename, hostname)
            ('AMS', '10.210.160.18' ),
            ('SV3', '10.110.192.11' )
 ;
+
 drop view if exists pxeview;
 create view pxeview as
   select s.*, p.hostname

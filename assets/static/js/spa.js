@@ -213,7 +213,7 @@ console.log("WS:", WS)
 var sender = sockinit(WS, receiver);
 
 
-var get = function(url) {
+var Xget = function(url) {
   return new Promise(function(resolve, reject) {
     if (urlDebug) {
         url += (url.indexOf('?') > 0) ? '&debug=true' : '?debug=true'
@@ -231,10 +231,6 @@ var get = function(url) {
       if (req.status == 200) {
         // Resolve the promise with the response text
         if (req.responseText.length > 0) {
-/*
-        var obj = JSON.parse(req.responseText)
-        resolve(obj)
-*/
         	resolve(JSON.parse(req.responseText))
 	}
 	else {
@@ -252,6 +248,58 @@ var get = function(url) {
     // Handle network errors
     req.onerror = function() {
       console.log('get network error');
+      reject(Error("Network Error"));
+    };
+
+    // Make the request
+    req.send();
+  });
+}
+
+var get = function(url) {
+  return new Promise(function(resolve, reject) {
+    if (urlDebug) {
+        url += ((url.indexOf("?") > 0) ? "&" : "?") + "debug=true"
+    }
+    // Do the usual XHR stuff
+    var req = new XMLHttpRequest();
+    req.open("GET", url);
+    var key = store.getters.apiKey;
+    if (key && key.length > 0) {
+        req.setRequestHeader("X-API-KEY", key)
+    } else {
+        router.push("/auth/login")
+        //reject(Error("no api key set"));
+        return
+        //console.log("no api key set")
+    }
+
+    req.onload = function() {
+      // This is called even on 404 etc, so check the status
+      if (req.status == 200) {
+        // Resolve the promise with the response text
+        var obj = (req.responseText.length > 0) ? JSON.parse(req.responseText) : null;
+        resolve(obj)
+      }
+      else {
+          if (req.status == 401) {
+              store.commit("logOut")
+              //  resolve(null)
+              reject(Error(req.statusText));
+                killCookie();
+               router.go("/auth/login")
+              return
+          }
+          // Otherwise reject with the status text
+          // which will hopefully be a meaningful error
+          console.log("rejecting!!! ack:",req.status, "txt:", req.statusText)
+          reject(Error(req.statusText));
+      }
+    };
+
+    // Handle network errors
+    req.onerror = function() {
+      console.log("get network error");
       reject(Error("Network Error"));
     };
 
@@ -534,7 +582,7 @@ var userList = Vue.component('user-list', {
     mixins: [pagedCommon],
     data: function() {
         return {
-            columns: ['USR', 'Login', 'First', 'Last', 'Level'],
+            columns: ['Email', 'First', 'Last', 'Level'],
             rows: [],
             url: userURL,
         }
@@ -544,17 +592,13 @@ var userList = Vue.component('user-list', {
     },
     methods: {
         loadData: function() {
-            var self = this;
-
-            fetchData(this.url, function(data) {
-                if (data) {
-                    self.rows = data
-                    console.log("loaded", data.length, "ip records")
-                }
-            })
+            get(this.url).then(data => this.rows = data)
+        },
+        addUser: function() {
+            router.push('/user/edit/0')
         },
         linkable: function(key) {
-            return (key == 'Login')
+            return (key == 'Email')
         },
         linkpath: function(entry, key) {
             return '/user/edit/' + entry['USR']
@@ -568,12 +612,11 @@ var userList = Vue.component('user-list', {
 
 var userEdit = Vue.component('user-edit', {
     template: '#tmpl-user-edit',
-    mixins: [editVue],
     data: function() {
         return {
             User: {},
-            dataURL: userURL,
             listURL: '/user/list',
+		url: "api/user/",
             levels: [
                 {Level:0, Label: 'User'},
                 {Level:1, Label: 'Editor'},
@@ -581,38 +624,38 @@ var userEdit = Vue.component('user-edit', {
             ],
         }
     },
-    route: { 
-          data: function (transition) {
-              if (transition.to.params.USR > 0) {
-                  var url = userURL + transition.to.params.USR;
-                  return {
-                      User: get(url)
-                  }
-              }
-              var user = new(User);
-              user.USR = 0;
-              return {
-                  User: user
-              }
-          }
+    created: function() {
+        this.loadSelf()
     },
     methods: {
-        myID: function() {
-            return this.User.USR
-        },
-        myself: function() {
-            return this.User
-        },
         loadSelf: function () {
-            var self = this;
             var id = this.$route.params.USR;
             if (id > 0) {
                 var url = this.dataURL + id;
 
-                fetchData(url, function(data) {
-                    self.User.Load(data);
-                })
+                get(this.url + id).then(u => this.User = u)
+            } else {
+                this.User = {
+                    USR: null,
+                    Email: "",
+                    First: "",
+                    Last: "",
+                    Level: null,
+                }
             }
+        },
+        showList: function() {
+            router.push("/user/list")
+        },
+        saveSelf: function() {
+            if (this.User.USR > 0) {
+                    posty(this.url + this.User.USR, this.User, "PATCH").then(this.showList)
+            } else {
+                    posty(this.url + this.User.USR, this.User).then(this.showList)
+            }
+        },
+        deleteSelf: function() {
+            posty(this.url + this.User.USR, null, "DELETE").then(this.showList)
         },
     },
 })
@@ -658,7 +701,7 @@ var App = Vue.extend({
             this.myapp.auth.user.admin = 0
             this.myapp.auth.loggedIn = false
             window.user_apikey = ''
-            fetchData('/imgman/api/logout')
+            get('api/logout')
         },
     },
 })
@@ -1010,14 +1053,13 @@ var imagePage = Vue.component('image-page', {
 // Site List
 //
 
-var siteList = Vue.component('site-list', {
-    template: '#tmpl-site-list',
+var pxeHosts = Vue.component('pxe-hosts', {
+    template: '#tmpl-pxe-hosts',
     mixins: [pagedCommon],
     data: function() {
         return {
-            columns: ['USR', 'Login', 'First', 'Last', 'Level'],
-            rows: [],
-            url: "api/site/"
+            columns: ["Sitename", "Hostname"],
+            url: "api/pxehost/",
         }
     },
     created: function() {
@@ -1025,22 +1067,55 @@ var siteList = Vue.component('site-list', {
     },
     methods: {
         loadData: function() {
-            var self = this;
-
-            fetchData(this.url, function(data) {
+            get(this.url).then(data => {
                 if (data) {
-                    self.rows = data
-                    console.log("loaded", data.length, "ip records")
+                    this.rows = data
+                    console.log("loaded", data.length, "sites")
                 }
             })
         },
+	addSite: function() {
+		router.push("/site/edit/0")
+	},
         linkable: function(key) {
-            return (key == 'Login')
+            return (key == 'Sitename')
         },
         linkpath: function(entry, key) {
-            return '/user/edit/' + entry['USR']
+            return '/site/edit/' + entry['ID']
         }
     }
+})
+
+var siteEdit = Vue.component('pxe-edit', {
+    template: '#tmpl-pxe-edit',
+    data: function() {
+        return {
+            Site: {},
+            url: 'api/pxehost/',
+        }
+    },
+    created: function () {
+	this.loadSelf()
+    },
+    methods: {
+        loadSelf: function () {
+            var id = this.$route.params.ID;
+            if (id > 0) {
+                get(this.url + id).then(s => this.Site = s)
+            }
+        },
+	showList: function() {
+		router.push("/site/list")
+	},
+	saveSelf: function() {
+                if (this.Site.ID > 0) {
+                        posty(this.url + this.Site.ID, this.Site, "PATCH").then(this.showList)
+                } else {
+                        posty(this.url + this.Site.ID, this.Site).then(this.showList)
+                }
+        },
+    },
+
 })
 
 var homePage = Vue.component('home-page', {
@@ -1084,7 +1159,8 @@ const routes = [
 { path: '/audit/log', 		component: auditLog },
 { path: '/auth/login',  	component: userLogin },
 { path: '/auth/logout', 	component: userLogout },
-{ path: '/site/list', 		component: siteList },
+{ path: '/site/edit/:ID', 	component: siteEdit },
+{ path: '/site/list', 		component: pxeHosts },
 { path: '/user/edit/:USR',	component: userEdit },
 { path: '/user/list', 		component: userList },
 { path: '/image', 		component: imagePage },

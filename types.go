@@ -137,8 +137,8 @@ type audit struct {
 }
 
 type pxeHost struct {
-	//STI      int64   `sql:"sti" key:"true" table:"pxehost"`
-	Sitename *string `sql:"sitename" table:"pxehosts"`
+	ID      int64   `sql:"id" key:"true" table:"pxehosts"`
+	Sitename *string `sql:"sitename"`
 	Hostname *string `sql:"hostname"`
 }
 
