@@ -64,11 +64,16 @@ pxe_filter() {
             cmd | getline result
             return result
         }
+        function filename(m) {
+            cmd = "pxemenu -f " m
+            cmd | getline result
+            return result
+        }
         $10 ~ /pxelinux.cfg\/01/ {
             mac = gensub(/-/, ":", "g", substr($10, 17));
             t = ts($1, $2, $3)
-            #print $1, $2, $3, $4, "PXEFILE", mac;  fflush() 
-            print t, ip, "PXEFILE", mac;  fflush() 
+            f = filename(mac)
+            print t, ip, "PXEFILE", mac, f;  fflush() 
         }
         '
 }
