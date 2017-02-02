@@ -166,19 +166,19 @@ func apiPXE(w http.ResponseWriter, r *http.Request) {
 		if err := dbAdd(a); err != nil {
 			log.Println("DB ERROR:", err)
 			jsonError(w, err, http.StatusInternalServerError)
-		} else {
-			fmt.Println("PRE EXEC")
-			if pxe.Device.Note != nil && len(*pxe.Device.Note) > 0 {
-				note := *pxe.Device.Note + "\n" + msg
-				pxe.Device.Note = &note
-				//pxe.Note = *pxe.Note + "\n" + msg
-			} else {
-				pxe.Device.Note = &msg
-			}
-			fmt.Println("GO EXEC")
-			pxeExec(pxe.Site, *pxe.Device.IPMI, pxe.Image)
-			sendJSON(w, pxe.Device)
+			return
 		}
+		fmt.Println("PRE EXEC")
+		if pxe.Device.Note != nil && len(*pxe.Device.Note) > 0 {
+			note := *pxe.Device.Note + "\n" + msg
+			pxe.Device.Note = &note
+			//pxe.Note = *pxe.Note + "\n" + msg
+		} else {
+			pxe.Device.Note = &msg
+		}
+		fmt.Println("GO EXEC")
+		pxeExec(pxe.Site, *pxe.Device.IPMI, pxe.Image)
+		sendJSON(w, pxe.Device)
 	}
 }
 
@@ -258,7 +258,7 @@ func pxeList(w http.ResponseWriter, r *http.Request) {
 func menuHandler(w http.ResponseWriter, r *http.Request) {
 	site := r.URL.Path
 	if menus, err := menuList(site); err != nil {
-        fmt.Println("menu fetch error:", err)
+		fmt.Println("menu fetch error:", err)
 		jsonError(w, err, http.StatusInternalServerError)
 	} else {
 		sendJSON(w, menus)
@@ -309,9 +309,10 @@ func apiEvents(w http.ResponseWriter, r *http.Request) {
 			log.Println("events error:", err)
 		}
 	*/
-    o := event{}
-    q := fmt.Sprintf("select %s from %s", o.SelectFields(), o.TableName())
-    dbStreamJSON(w, q)
+	o := event{}
+	q := fmt.Sprintf("select %s from %s", o.SelectFields(), o.TableName())
+	fmt.Println("EVENTS QUERY:", q)
+	dbStreamJSON(w, q)
 }
 
 var webHandlers = []hFunc{

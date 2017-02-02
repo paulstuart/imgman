@@ -306,6 +306,13 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="Restricted" class="control-label col-xs-2">Restricted</label>
+                    <div class="col-xs-2">
+                        <input type="checkbox" id="Restricted" v-model="Device.Restricted" disabled="Device.Restricted"/>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="IP" class="control-label col-xs-2">IP</label>
                     <div class="col-xs-2">
                         <input type="text" id="IP" v-model="Device.IP" readonly/>
@@ -337,13 +344,21 @@
             <fieldset class="col-xs-12">
                 <div class="form-group">
                     <div class="col-xs-offset-1 col-xs-1">
-                        <button class="btn" v-on:click.prevent="reset">Cancel</button>
+                        <button class="btn" v-on:click.prevent="home">Cancel</button>
                     </div>
-                    <div class="col-xs-1">
+                    <div class="col-xs-1" v-if="! Device.Restricted">
                         <button class="btn btn-primary" v-on:click.prevent="reimage" :disabled="notReady">Reimage!</button>
                     </div>
                 </div>
             </fieldset>
+
+            <div class="col-xs-12" v-if="Device.Restricted">
+                <div class="notice">Note: this server is restricted and cannot be reimaged with this service</div>
+            </div>
+
+            <div class="col-xs-12" v-else>
+                <div class="notice">Note: the server may take a couple minutes to boot, <br>and the imaging process can take 10 minutes or more.</br>Please be patient</div>
+            </div>
 
         </form>
     </div>

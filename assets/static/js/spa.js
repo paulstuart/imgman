@@ -115,15 +115,8 @@ const store = new Vuex.Store({
             state.login = user.Login
             state.USR = user.USR
             state.active = true
-         //   console.log("setUser:", state.login);
             if (user["COOKIE"] === true) {
-        //        console.log("verifying cookie data is valid");
                 get("api/check")
-/*
-                    .then(u => 
-                        console.log("user is good:", u)
-                    )
-*/
                     .catch(x => {
                         console.log("user is bad:", x)
                     })
@@ -959,6 +952,7 @@ var imagePage = Vue.component('image-page', {
                 IP: '',
                 IPMI: '',
                 Note: '',
+                Restricted: false,
             },
             STI: 0,
             ErrorMsg: ''
@@ -969,7 +963,6 @@ var imagePage = Vue.component('image-page', {
     },
     computed: {
         notReady: function() {
-            //console.log('notReady:', (this.MAC.length == 0 || this.IP.length == 0 || this.IPMI.length == 0));
             return (this.Device.MAC.length == 0 || this.Device.IP.length == 0 || this.Device.IPMI.length == 0 || this.menu.length == 0)
         }
     },
@@ -983,48 +976,51 @@ var imagePage = Vue.component('image-page', {
             this.Device.IPMI    = ''
             this.Device.Profile = ''
             this.Device.Note    = ''
+            this.Device.Restricted  = false
         },
         reimage: function() {
-            var self = this;
             var url = '/api/pxeboot';
-	    const site = this.sites.find(s => s.STI == this.STI);
-	    const data = {
-		    Site: site['Name'],
-		    Image: this.menu,
-		    Device: this.Device,
-	    }
+            const site = this.sites.find(s => s.STI == this.STI);
+            const data = {
+                Site: site['Name'],
+                Image: this.menu,
+                Device: this.Device,
+            }
             posty(url, data).then(resp => {
-		const obj = {
-			TS: toISOString(new Date()),   
-			Host: this.Device.Hostname,
-			Kind: "PXE boot initiated",
-			Msg: "image: " + this.menu,
-		}
-    		store.commit("addUpdate", obj)
-                console.log("RESP:",resp)
-                self.Device.Note = resp.Note
-            }).catch(function(oops) {
-                console.log('oops:',oops);
-                self.ErrorMsg = oops['Error']
+                const obj = {
+                    TS: toISOString(new Date()),   
+                    Host: this.Device.Hostname,
+                    Kind: "PXE boot initiated",
+                    Msg: "image: " + this.menu,
+                }
+                store.commit("addUpdate", obj)
+                    console.log("RESP:",resp)
+                    this.Device.Note = resp.Note
+                    router.push("/")
+                }).catch(function(oops) {
+                    console.log('oops:',oops);
+                    this.ErrorMsg = oops['Error']
             })
         },
         loadSelf: function() {
-            var self = this;
             var url = '/api/host/';
             var data = {
                 Hostname: this.Device.Hostname,
                 STI: this.STI,
             }
-            posty(url, data).then(function(device) {
+            posty(url, data).then(device => {
                 if (device.length == 1) {
-                    self.Device = device[0]
+                    this.Device = device[0]
                 } else {
                     //throw(Error("wrong number of devices"));
                     console.log("wrong number of devices");
                 }
-            }).catch(function(oops) {
-                self.reset()
+            }).catch(oops => {
+                this.reset()
             })
+        },
+        home: function() {
+                router.push("/")
         },
     },
     watch: {
@@ -1033,14 +1029,13 @@ var imagePage = Vue.component('image-page', {
             this.Device.Hostname = ''
             this.menu           = ''
             this.menus          = []
-            var self = this;
             for (var i=0; i < this.sites.length; i++) {
                 var site = this.sites[i];
                 if (site.STI == this.STI) {
                     console.log("site:",site.Name)
-                    get('/api/menus/' + site.Name).then(function(list) {
+                    get('/api/menus/' + site.Name).then(list => {
                         list.unshift('')
-                        self.menus = list;
+                        this.menus = list;
                     })
                     break;
                 }
@@ -1124,6 +1119,7 @@ var homePage = Vue.component('home-page', {
     data: function() {
         return {
             columns: ['TS', 'Host', 'Kind', 'Msg'],
+            //columns: ['ts', 'host', 'kind', 'msg'],
             url: "api/site/",
         }
     },
@@ -1132,9 +1128,7 @@ var homePage = Vue.component('home-page', {
     },
     computed: {
 	    rows: function() {
-        	//return this.$store.getters.updates;
-        	//var data = this.$store.getters.updates;
-            	return this.searchData(this.$store.getters.updates);
+            return this.searchData(this.$store.getters.updates);
 	    },
     },
     methods: {
@@ -1142,9 +1136,7 @@ var homePage = Vue.component('home-page', {
 	    get("api/events").then(events => {
             for (let e of events) {
                 this.$store.commit("addUpdate", e)
-                //console.log("E:",e);
             }
-		    //this.$store.getters.updates
 	    })
         },
         linkable: function(key) {

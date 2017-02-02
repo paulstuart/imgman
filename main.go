@@ -65,6 +65,8 @@ const (
 	timeLayout = "2006-01-02 15:04:05"
 )
 
+//2017-01-31 12:10:03-08:00
+
 func strText(s *string) string {
 	if s == nil {
 		return ""
@@ -217,9 +219,9 @@ func setMacHost(mac, hostname string) {
 }
 
 func addEvent(e event) {
-    if err := dbAdd(&e); err != nil {
-        fmt.Println("DB ADD ERR:", err)
-    }
+	if err := dbAdd(&e); err != nil {
+		fmt.Println("DB ADD ERR:", err)
+	}
 	sockEcho(e)
 }
 
@@ -435,7 +437,7 @@ func process(s string) {
 		hostname = getMacHost(fields[3])
 		msg = "kickstart: " + strings.Join(fields[4:], " ")
 	case "IPMI":
-        // echo "- $HOST IPMI $CMD ${MSG[*]}" > /dev/udp/$IMGMAN_HOST/$IMGMAN_PORT
+		// echo "- $HOST IPMI $CMD ${MSG[*]}" > /dev/udp/$IMGMAN_HOST/$IMGMAN_PORT
 		fmt.Println("IPMI HIT:", fields)
 		kind = "ipmi"
 		hostname = fields[1]
@@ -444,25 +446,39 @@ func process(s string) {
 		// PXEFILE b8:ca:3a:63:f7:d0
 		kind = "tftp"
 		hostname = getMacHost(fields[3])
-		msg = "file: " + fields[3]
+		if len(fields) > 4 {
+			msg = "File: " + fields[4]
+		} else {
+			msg = "File: " + fields[3]
+		}
 	case "SHUTDOWN":
+		// 2017/01/31 15:30:22 UDP: - - SHUTDOWN 0c:c4:7a:43:0e:52
 		kind = "shutdown"
 		hostname = getMacHost(fields[3])
+		//fmt.Println("SHUTDOWN HOST:",hostname)
+		if len(fields) > 4 {
+			msg = strings.Join(fields[4:], " ")
+		}
 	case "BOOT":
 		kind = "boot"
 		hostname = getMacHost(fields[3])
+		//fmt.Println("BOOT HOST:",hostname)
+		if len(fields) > 4 {
+			msg = strings.Join(fields[4:], " ")
+		}
 	default:
 		fmt.Printf("TS:%v IP:%s MSG:%s\n", ts, ip, strings.Join(fields[2:], " "))
 		hostname = ip
 		msg = strings.Join(fields[2:], " ")
 	}
 	//fmt.Println("ADD EVNT:", event{TS: ts, Host: hostname, Kind: kind, Msg: msg})
+	//addEvent(event{TS: jsonTime(ts), Host: hostname, Kind: kind, Msg: msg})
 	addEvent(event{TS: ts, Host: hostname, Kind: kind, Msg: msg})
 }
 
 func main() {
 	var err error
-	if err = dbOpen(dbFile, true); err != nil {
+	if err = dbOpen(dbFile+"?_loc=auto", true); err != nil {
 		panic(err)
 	}
 	h, err := dbList(&pxeHost{})

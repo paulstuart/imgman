@@ -292,3 +292,10 @@ table.racked th {
     font-weight: bold;
     font-size: 250%;
 }
+
+.notice {
+    text-align: center;
+    font-color: red;
+    font-weight: bold;
+    font-size: 110%;
+}

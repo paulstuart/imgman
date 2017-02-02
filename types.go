@@ -8,50 +8,55 @@ import (
 
 //go:generate dbgen
 
-type jsonDate time.Time
+type jsonTime time.Time
 
-func (d jsonDate) MarshalJSON() ([]byte, error) {
+const sql_time = `2006-01-02 15:04:05`
+
+func (d jsonTime) MarshalJSON() ([]byte, error) {
 	t := time.Time(d)
 	if t.IsZero() {
 		return []byte(`""`), nil
 	}
-	stamp := fmt.Sprintf(`"%s"`, t.Format("2006-01-02"))
+	stamp := fmt.Sprintf(`"%s"`, t.Format(sql_time))
 	return []byte(stamp), nil
 }
 
-func (d *jsonDate) UnmarshalJSON(in []byte) error {
+func (d *jsonTime) UnmarshalJSON(in []byte) error {
 	s := string(in)
-	fmt.Printf("\nPARSE THIS: (%d) %s\n\n", len(s), s)
 	if len(in) < 3 {
 		return nil
 	}
 	if d == nil {
-		d = new(jsonDate)
+		d = new(jsonTime)
 	}
+	//const longform = `"2006-01-02T15:04:05.000Z"`
 	const longform = `"2006-01-02T15:04:05.000Z"`
 	if len(s) == len(longform) {
 		t, err := time.Parse(longform, s)
-		*d = jsonDate(t)
+		*d = jsonTime(t)
 		return err
 	}
-	t, err := time.Parse(`"2006-1-2"`, s)
-	if err != nil {
-		t, err = time.Parse(`"2006/1/2"`, s)
-	}
+	/*
+		t, err := time.Parse(`"2006-1-2"`, s)
+		if err != nil {
+			t, err = time.Parse(`"2006/1/2"`, s)
+		}
+	*/
+	t, err := time.Parse(sql_time, s)
 	if err == nil {
-		*d = jsonDate(t)
+		*d = jsonTime(t)
 	}
 	return err
 }
 
 // Scan implements the Scanner interface.
-func (d *jsonDate) Scan(value interface{}) error {
-	*d = jsonDate(value.(time.Time))
+func (d *jsonTime) Scan(value interface{}) error {
+	*d = jsonTime(value.(time.Time))
 	return nil
 }
 
 // Value implements the driver Valuer interface.
-func (d *jsonDate) Value() (driver.Value, error) {
+func (d *jsonTime) Value() (driver.Value, error) {
 	if d == nil {
 		return nil, nil
 	}
@@ -105,18 +110,19 @@ type site struct {
 }
 
 type pxeDevice struct {
-	DID      int64   `sql:"did" key:"true" table:"pxedevice"`
-	STI      int64   `sql:"sti"`
-	RID      int64   `sql:"rid"`
-	Site     *string `sql:"site"`
-	Rack     int     `sql:"rack"`
-	RU       int     `sql:"ru"`
-	Hostname *string `sql:"hostname"`
-	Profile  *string `sql:"profile"`
-	MAC      *string `sql:"mac"`
-	IP       *string `sql:"ip"`
-	IPMI     *string `sql:"ipmi"`
-	Note     *string `sql:"note"`
+	DID        int64   `sql:"did" key:"true" table:"pxedevice"`
+	STI        int64   `sql:"sti"`
+	RID        int64   `sql:"rid"`
+	Site       *string `sql:"site"`
+	Rack       int     `sql:"rack"`
+	RU         int     `sql:"ru"`
+	Hostname   *string `sql:"hostname"`
+	Profile    *string `sql:"profile"`
+	MAC        *string `sql:"mac"`
+	IP         *string `sql:"ip"`
+	IPMI       *string `sql:"ipmi"`
+	Note       *string `sql:"note"`
+	Restricted bool    `sql:"restricted"`
 }
 
 type pxeRequest struct {
@@ -137,10 +143,20 @@ type audit struct {
 }
 
 type pxeHost struct {
-	ID      int64   `sql:"id" key:"true" table:"pxehosts"`
+	ID       int64   `sql:"id" key:"true" table:"pxehosts"`
 	Sitename *string `sql:"sitename"`
 	Hostname *string `sql:"hostname"`
 }
+
+/*
+type event struct {
+	//TS   jsonTime  `json:"ts"   sql:"TS" table:"events"`
+	TS   time.Time  `json:"ts"   sql:"TS" table:"events"`
+	Host string    `json:"host" sql:"Host"`
+	Kind string    `json:"kind" sql:"Kind"` // dhcp, tftp, http
+	Msg  string    `json:"msg"  sql:"Msg"`
+}
+*/
 
 type event struct {
 	TS   time.Time `sql:"TS" table:"events"`

@@ -75,14 +75,51 @@ BEGIN
     ;
 END;
 
-DROP TABLE IF EXISTS events;
-CREATE TABLE events (
+DROP TABLE IF EXISTS real_events;
+CREATE TABLE real_events (
+    ID integer primary key,
     TS timestamp DEFAULT CURRENT_TIMESTAMP,
     Host text not null,
     Kind text,
     Msg text
 );
-
 drop index if exists events_host;
-create index events_host on events(host,ts);
+drop index if exists real_events_host;
+drop index if exists real_events_ts;
+create index real_events_host on real_events(host,ts);
+create index real_events_ts on real_events(ts);
 
+-- create sorted view so that default view is by TS descending
+
+DROP VIEW IF EXISTS events;
+CREATE VIEW events as select 
+   id, datetime(ts,'localtime') as ts, host, kind, msg
+   from real_events 
+   order by ts desc
+   ;
+
+DROP TRIGGER IF EXISTS events_insert;
+CREATE TRIGGER events_insert INSTEAD OF INSERT ON events 
+BEGIN
+    insert into real_events 
+    (TS, Host, Kind, Msg) 
+    values 
+    (ifnull(NEW.TS,datetime('now', 'utc')), NEW.Host, NEW.Kind, NEW.Msg);
+END;
+
+DROP TRIGGER IF EXISTS events_update;
+CREATE TRIGGER events_insert INSTEAD OF update ON events 
+BEGIN
+    update real_events set 
+        TS=ifnull(NEW.TS, OLD.TS),
+        Host=ifnull(NEW.Host, OLD.Host),
+        Kind=ifnull(NEW.Kind, OLD.Kind),
+        Msg=ifnull(NEW.Msg, OLD.Msg)
+    where ID=OLD.ID;
+END;
+
+DROP TRIGGER IF EXISTS events_delete;
+CREATE TRIGGER events_delete INSTEAD OF DELETE ON events 
+BEGIN
+    delete from real_events where ID=OLD.ID;
+END;
