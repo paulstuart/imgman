@@ -7,7 +7,7 @@ all: install
 
 install:
 	cp scripts/pxestats /usr/local/bin/
-	cp init.d/etc/init.d
+	cp init.d/pxestats /etc/init.d/pxestats
 	chkconfig pxestats on
 	service pxestats restart
 
