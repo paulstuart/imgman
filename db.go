@@ -94,7 +94,7 @@ func dbPragmas() (map[string]string, error) {
 */
 
 func dbOpen(file string, create bool) (err error) {
-	datastore, err = dbutil.Open(file, true)
+	datastore, err = dbutil.Open(file, "", true)
 	return err
 }
 
@@ -105,7 +105,7 @@ func dbPrep() {
 	if _, err = os.Stat(dbFile); os.IsNotExist(err) {
 		fresh = true
 	}
-	datastore, err = dbutil.Open(dbFile, true)
+	datastore, err = dbutil.Open(dbFile, "", true)
 	if err != nil {
 		panic(err)
 	}
