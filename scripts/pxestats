@@ -7,6 +7,8 @@
 # finding are sent by UDP to a listener that can track the imaging progress
 #
 
+export PATH=$PATH:/usr/local/bin
+
 unset BACKFILL FAKE
 
 # find our active IP address
@@ -62,18 +64,20 @@ pxe_filter() {
         function ts(m, d, t) {
             cmd = "date -d \047" m " " d " " t "\047 +%s";
             cmd | getline result
+	    close(cmd);
             return result
         }
         function filename(m) {
-            cmd = "pxemenu -f " m
-            cmd | getline result
-            return result
+            cmd = "pxemenu -f " m;
+            cmd | getline result;
+	    close(cmd);
+            return result;
         }
         $10 ~ /pxelinux.cfg\/01/ {
             mac = gensub(/-/, ":", "g", substr($10, 17));
             t = ts($1, $2, $3)
             f = filename(mac)
-            print t, ip, "PXEFILE", mac, f;  fflush() 
+	    print t, ip, "PXEFILE", mac, filename(mac);  fflush() 
         }
         '
 }
@@ -83,14 +87,12 @@ fail() {
   exit 1
 }    
 
-cat /var/log/httpd/access_log	| http_filter 
-exit
-
-while getopts "bh:p:" opt; do
+while getopts "bh:p:t" opt; do
   case $opt in
       b) BACKFILL=true ;;
       h) host=$OPTARG ;;
       p) port=$OPTARG ;;
+      t) pxe_filter < /var/log/messages; exit ;;
       \?) fail "invalid option: -$OPTARG" ;;
   esac
 done
