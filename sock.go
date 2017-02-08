@@ -9,14 +9,14 @@ import (
 )
 
 var (
-	sockPath = "/sock"
-	JSON     = websocket.JSON    // codec for JSON
-	Message  = websocket.Message // codec for string, []byte
-	//ActiveClients = make(map[ClientConn]int) // map containing clients
-	ActiveClients = make(map[string]ClientConn) // by ip address
+	sockPath  = "/sock"
+	codecJSON = websocket.JSON // codec for JSON
+	//Message  = websocket.Message // codec for string, []byte
+	//activeClients = make(map[clientConn]int) // map containing clients
+	activeClients = make(map[string]clientConn) // by ip address
 )
 
-type ClientConn struct {
+type clientConn struct {
 	websocket *websocket.Conn
 	clientIP  string
 }
@@ -29,8 +29,8 @@ type socketHandler func(ws *websocket.Conn, data clientMsg)
 
 func sockEcho(msg event) {
 	fmt.Println("ECHO!", msg)
-	for ip, cs := range ActiveClients {
-		if err := JSON.Send(cs.websocket, msg); err != nil {
+	for ip, cs := range activeClients {
+		if err := codecJSON.Send(cs.websocket, msg); err != nil {
 			// we could not send the message to a peer
 			log.Println("Could not send message to ", ip, err.Error())
 		}
@@ -65,21 +65,21 @@ func sockListener(ws *websocket.Conn, fn socketHandler) {
 
 	client := ws.Request().RemoteAddr
 	log.Println("Client connected:", client)
-	sockCli := ClientConn{ws, client}
-	ActiveClients[client] = sockCli
-	log.Println("Number of clients connected ...", len(ActiveClients))
+	sockCli := clientConn{ws, client}
+	activeClients[client] = sockCli
+	log.Println("Number of clients connected ...", len(activeClients))
 
 	// for loop so the websocket stays open otherwise
 	// it'll close after one Receieve and Send
 	for {
-		if err = JSON.Receive(ws, &clientData); err != nil {
+		if err = codecJSON.Receive(ws, &clientData); err != nil {
 			// If we cannot Read then the connection is closed
 			log.Println("Websocket Disconnected waiting", err.Error())
 			// remove the ws client conn from our active clients
 			client := ws.Request().RemoteAddr
-			delete(ActiveClients, client)
-			//delete(ActiveClients, sockCli)
-			log.Println("Number of clients still connected ...", len(ActiveClients))
+			delete(activeClients, client)
+			//delete(activeClients, sockCli)
+			log.Println("Number of clients still connected ...", len(activeClients))
 			return
 		}
 		fn(ws, clientData)

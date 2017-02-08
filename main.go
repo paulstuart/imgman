@@ -54,6 +54,8 @@ var (
 	oktaHash   string
 	pLock      sync.Mutex
 	macLock    sync.Mutex
+	aLock      sync.Mutex                  // active lock
+	activeMACs = make(map[string]struct{}) // db of active mac addresses (between boot request and reboot notification)
 	menus      = make(map[string][]string)
 	pxeHosts   = make(map[string]string)
 	insecure   bool
@@ -72,6 +74,23 @@ func strText(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func makeActive(mac string, active bool) {
+	aLock.Lock()
+	if active {
+		activeMACs[mac] = struct{}{}
+	} else {
+		delete(activeMACs, mac)
+	}
+	aLock.Unlock()
+}
+
+func isActive(mac string) bool {
+	aLock.Lock()
+	_, ok := activeMACs[mac]
+	aLock.Unlock()
+	return ok
 }
 
 func absExecPath() (name string, err error) {
@@ -412,9 +431,13 @@ func process(s string) {
 	var mac, hostname, kind, msg string
 	switch fields[2] {
 	case "DHCPDISCOVER":
+		// DHCP is chatty -- only log info for servers actively being reimaged
 		kind = "dhcp"
 		msg = "discover"
 		mac = fields[3]
+		if !isActive(mac) {
+			return
+		}
 		hostname = getMacHost(mac)
 		if len(hostname) == 0 {
 			return
@@ -424,6 +447,9 @@ func process(s string) {
 		kind = "dhcp"
 		msg = "offer "
 		mac = fields[3]
+		if !isActive(mac) {
+			return
+		}
 		//dhcp = fields[4]
 		hostname = getMacHost(mac)
 		if len(hostname) == 0 {
@@ -442,6 +468,7 @@ func process(s string) {
 		kind = "ipmi"
 		hostname = fields[1]
 		msg = "ipmi command: " + strings.Join(fields[3:], " ")
+		makeActive(fields[3], true)
 	case "PXEFILE":
 		// PXEFILE b8:ca:3a:63:f7:d0
 		kind = "tftp"
@@ -466,6 +493,7 @@ func process(s string) {
 		if len(fields) > 4 {
 			msg = strings.Join(fields[4:], " ")
 		}
+		makeActive(fields[3], false)
 	default:
 		fmt.Printf("TS:%v IP:%s MSG:%s\n", ts, ip, strings.Join(fields[2:], " "))
 		hostname = ip

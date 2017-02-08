@@ -10,14 +10,14 @@ import (
 
 type jsonTime time.Time
 
-const sql_time = `2006-01-02 15:04:05`
+const sqlTime = `2006-01-02 15:04:05`
 
 func (d jsonTime) MarshalJSON() ([]byte, error) {
 	t := time.Time(d)
 	if t.IsZero() {
 		return []byte(`""`), nil
 	}
-	stamp := fmt.Sprintf(`"%s"`, t.Format(sql_time))
+	stamp := fmt.Sprintf(`"%s"`, t.Format(sqlTime))
 	return []byte(stamp), nil
 }
 
@@ -42,7 +42,7 @@ func (d *jsonTime) UnmarshalJSON(in []byte) error {
 			t, err = time.Parse(`"2006/1/2"`, s)
 		}
 	*/
-	t, err := time.Parse(sql_time, s)
+	t, err := time.Parse(sqlTime, s)
 	if err == nil {
 		*d = jsonTime(t)
 	}
