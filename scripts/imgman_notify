@@ -1,0 +1,15 @@
+#!/bin/bash
+
+[[ -f /etc/sysconfig/imgman ]] && . /etc/sysconfig/imgman
+
+IMGHOST=${IMGHOST:-127.0.0.1}
+IMGPORT=9999
+IMGMAC=$(ethtool -P eth0 | awk '{print $3}')
+
+case $1 in
+        start) MSG="- - BOOT $IMGMAC" ;; 
+        stop)  MSG="- - SHUTDOWN $IMGMAC";;
+        *) echo >&2 "invalid command: $1"; exit 1 ;;
+esac
+
+echo $MSG > /dev/udp/$IMGHOST/$IMGPORT
