@@ -116,7 +116,7 @@ func pxeExec(site, ipmi, image string) {
 		return
 	}
 	log.Printf("pxeboot site:%s ssh:%s impi:%s image:%s\n", site, host, ipmi, image)
-	cmd := "sudo /usr/local/bin/pxeboot -m " + image + " " + ipmi
+    cmd := "sudo /usr/local/bin/pxeboot -f " + ipmi + " " + image 
 	out, err := sshcmd(host, cmd, sshTimeout)
 	if err != nil {
 		log.Println("pxeboot error:", err)
