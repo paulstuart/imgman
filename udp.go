@@ -10,6 +10,8 @@ func udpReader(c chan []byte, closer chan struct{}, fn func(string)) {
 	for {
 		select {
 		case buff := <-c:
+            //fmt.Println("UREAD:", string(buff))
+
 			lines := strings.Split(string(buff), "\n")
 			for _, line := range lines {
 				line = strings.TrimSpace(line)
@@ -36,11 +38,8 @@ func udpServer(port int) {
 	}
 	defer ServerConn.Close()
 
-	buf := make([]byte, 4096)
-
 	for {
-		//n, addr, err := ServerConn.ReadFromUDP(buf)
-		//fmt.Println("Received ", string(buf[0:n]), " from ", addr)
+	    buf := make([]byte, 4096)
 		n, _, err := ServerConn.ReadFromUDP(buf)
 
 		if err != nil {

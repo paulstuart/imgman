@@ -454,8 +454,15 @@
             </option>
         </select>
 
+        <label for="host">Host</label>
+        <select id="host" v-model="hostfilter">
+            <option v-for="host in hostlist" v-bind:value="host">
+                {{ host }}
+            </option>
+        </select>
+
         <paged-grid 
-            :data="rows"
+            :data="eventrows"
             :columns="columns" 
             :linkable="linkable"
             :linkPath="linkpath"

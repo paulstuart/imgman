@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+    "regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,11 +34,11 @@ var (
 	startTime      = time.Now()
 	sqlDir         = "sql" // dir containing sql schemas, etc
 	sqlSchema      = sqlDir + "/schema.sql"
-	//eventFile      = execDir + "/events.json"
 	dbFile     = execDir + "/data.db"
 	udpChan    = make(chan []byte, 1024)
 	closer     = make(chan struct{})
 	macHosts   = make(map[string]string)
+	ipmiHosts   = make(map[string]string) // ipmi ip -> hostname
 	sshTimeout = 20
 	sshUser    string
 	sshKeyFile string
@@ -55,10 +56,12 @@ var (
 	pLock      sync.Mutex
 	macLock    sync.Mutex
 	aLock      sync.Mutex                  // active lock
+	iLock      sync.Mutex                  // active lock
 	activeMACs = make(map[string]struct{}) // db of active mac addresses (between boot request and reboot notification)
 	menus      = make(map[string][]string)
 	pxeHosts   = make(map[string]string)
 	insecure   bool
+    ipRE = regexp.MustCompile(`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`)
 )
 
 const (
@@ -93,6 +96,16 @@ func isActive(mac string) bool {
 	return ok
 }
 
+func activeList() []string {
+	aLock.Lock()
+    a := make([]string,0,len(activeMACs))
+    for k, _ := range activeMACs {
+        a = append(a, k)
+    }
+	aLock.Unlock()
+	return a
+}
+
 func absExecPath() (name string, err error) {
 	name = os.Args[0]
 
@@ -108,13 +121,24 @@ func absExecPath() (name string, err error) {
 	return
 }
 
-func pxeExec(site, ipmi, image string) {
+func pxeExec(site, hostname, ipmi, image string) {
 	log.Println("***** PXE EXEC HOST:", ipmi)
 	host, ok := pxeHosts[site]
 	if !ok {
 		log.Printf("host not found for site:%s\n", site)
 		return
 	}
+    mac := getMacHost(ipmi)
+    if len(mac) == 0 {
+        var err error
+        mac, err = findMAC(ipmi)
+        if err != nil {
+            fmt.Println("findMAC IPMI:", ipmi, "ERR:", err)
+        } else {
+            setMacHost(mac, hostname)
+        }
+    }
+    makeActive(mac, true)
 	log.Printf("pxeboot site:%s ssh:%s impi:%s image:%s\n", site, host, ipmi, image)
     cmd := "sudo /usr/local/bin/pxeboot -f " + ipmi + " " + image 
 	out, err := sshcmd(host, cmd, sshTimeout)
@@ -411,7 +435,7 @@ func process(s string) {
 	}
 	fields := strings.Fields(s)
 	if len(fields) < 3 {
-		fmt.Println("Not enough fields:", fields)
+		fmt.Printf("Not enough fields: %s, (%s)\n", s, fields)
 		return
 	}
 	var ts time.Time
@@ -440,6 +464,7 @@ func process(s string) {
 		}
 		hostname = getMacHost(mac)
 		if len(hostname) == 0 {
+            fmt.Println("can't find hostname for MAC:", mac)
 			return
 		}
 		//fmt.Printf("TS:%v DISCOVER MAC:%s\n", ts, mac)
@@ -453,6 +478,7 @@ func process(s string) {
 		//dhcp = fields[4]
 		hostname = getMacHost(mac)
 		if len(hostname) == 0 {
+            fmt.Println("can't find hostname for mac:", mac)
 			return
 		}
 		//fmt.Printf("TS:%v OFFER MAC:%s IP:%s\n", ts, mac, dhcp)
@@ -470,7 +496,6 @@ func process(s string) {
 		msg = "ipmi command: " + strings.Join(fields[3:], " ")
 		makeActive(fields[3], true)
 	case "PXEFILE":
-		// PXEFILE b8:ca:3a:63:f7:d0
 		kind = "tftp"
 		hostname = getMacHost(fields[3])
 		if len(fields) > 4 {
@@ -504,11 +529,41 @@ func process(s string) {
 	addEvent(event{TS: ts, Host: hostname, Kind: kind, Msg: msg})
 }
 
+func ipmiHostSave(d pxeDevice) {
+    iLock.Lock()
+    ipmiHosts[*d.IPMI] = *d.Hostname
+    iLock.Unlock()
+}
+
+func ipmiHostGet(ipmi string) string {
+    if ! ipRE.Match([]byte(ipmi)) {
+        return ipmi
+    }
+    iLock.Lock()
+    host, _ := ipmiHosts[ipmi] 
+    iLock.Unlock()
+    return host
+}
+
 func main() {
 	var err error
 	if err = dbOpen(dbFile+"?_loc=auto", true); err != nil {
 		panic(err)
 	}
+
+/*
+    t1 := tsTest {
+	Host: "myhost",
+	Msg: "mymsg",
+	TS:   time.Now().Unix(),
+    }
+    if err := dbAdd(&t1); err != nil {
+        fmt.Println("ADD ERR:", err)
+    }
+    dbClose()
+    return
+*/
+
 	h, err := dbList(&pxeHost{})
 	if err != nil {
 		panic(err)

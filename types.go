@@ -164,3 +164,24 @@ type event struct {
 	Kind string    `sql:"Kind"` // dhcp, tftp, http
 	Msg  string    `sql:"Msg"`
 }
+
+type credentials struct {
+	IP       string `sql:"ip" table:"credentials"`
+	Username string `sql:"username"`
+	Password string `sql:"password"`
+}
+
+type tsTest struct {
+	ID       int64   `sql:"id" key:"true" table:"tstest"`
+	Host string    `sql:"Hostname"`
+	Msg  string    `sql:"msg"`
+	TS   int64      `sql:"ts"`
+}
+
+/*
+CREATE TABLE IF NOT EXISTS "tstest" (
+    id integer primary key,
+    hostname text,
+    msg text,
+    ts integer DEFAULT CURRENT_TIMESTAMP
+*/

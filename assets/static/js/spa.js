@@ -77,8 +77,6 @@ var killCookie = function() {
     xhttp.send();
 }
 
-var sameUser = false;
-
 const store = new Vuex.Store({
     state: {
         apiKey: "",
@@ -86,6 +84,7 @@ const store = new Vuex.Store({
         active: false,
         login: "",
         USR: null,
+        hosts: {"": ""},
 	updates: [],
     },
     getters: {
@@ -106,6 +105,9 @@ const store = new Vuex.Store({
         },
         updates: state => {
             return state.updates
+        },
+        hostlist: state => {
+            return state.hosts 
         },
     },
     mutations: {
@@ -132,6 +134,7 @@ const store = new Vuex.Store({
         },
         addUpdate(state, update) {
             state.updates.unshift(update)
+            state.hosts[update.Host] = update.Host
         },
     },
 })
@@ -162,16 +165,6 @@ var apikey = function() {
 var receiver = function(obj) {
     console.log("RECV:", obj)
     store.commit("addUpdate", obj)
-/*
-//placeholder for now
-var host = $('#host').val();
-if (obj.Host === host && obj.Msg === "refresh") {
-    $('#countdown').text('');
-    refresh_list();
-    } else {
-	//alert("Received\nHost: " + obj.Host + "\nFile: " + obj.File + "\nMsg: " + obj.Msg);
-}
-*/
 }
 
 var sockinit = function(url, receiver) {
@@ -204,50 +197,6 @@ const WS = "ws://" + window.location.hostname + ":" + window.location.port + "/s
 console.log("WS:", WS)
 
 var sender = sockinit(WS, receiver);
-
-
-var Xget = function(url) {
-  return new Promise(function(resolve, reject) {
-    if (urlDebug) {
-        url += (url.indexOf('?') > 0) ? '&debug=true' : '?debug=true'
-    }
-    // Do the usual XHR stuff
-    var req = new XMLHttpRequest();
-    req.open('GET', url);
-    const key = store.getters.apiKey;
-    if (key.length > 0) {
-        req.setRequestHeader("X-API-KEY", key)
-    }
-
-    req.onload = function() {
-      // This is called even on 404 etc, so check the status
-      if (req.status == 200) {
-        // Resolve the promise with the response text
-        if (req.responseText.length > 0) {
-        	resolve(JSON.parse(req.responseText))
-	}
-	else {
-        	resolve(null)
-	}
-      }
-      else {
-        // Otherwise reject with the status text
-        // which will hopefully be a meaningful error
-        console.log('rejecting!!! ack:',req.status, 'txt:', req.statusText)
-        reject(Error(req.statusText));
-      }
-    };
-
-    // Handle network errors
-    req.onerror = function() {
-      console.log('get network error');
-      reject(Error("Network Error"));
-    };
-
-    // Make the request
-    req.send();
-  });
-}
 
 var get = function(url) {
   return new Promise(function(resolve, reject) {
@@ -436,35 +385,6 @@ var editVue = {
     }
 }
 
-/*
-var siteMIX = {
-    route: { 
-          data: function (transition) {
-            //var userId = transition.to.params.userId
-            return Promise.all([
-                getSiteLIST(), 
-           ]).then(function (data) {
-              return {
-                sites: data[0],
-              }
-            })
-          }
-    },
-}
-*/
-
-var commonListMIX = {
-    computed: {
-        sitename: function() {
-            for (var i=0; i<this.sites.length; i++) {
-                if (this.sites[i].STI == this.STI) {
-                    return this.sites[i].Name
-                }
-            }
-            return "ALL"
-        },
-    },
-}
 
 // TODO: these should be generated from a factory function
 function getSiteLIST(all) {
@@ -1119,17 +1039,23 @@ var homePage = Vue.component('home-page', {
     data: function() {
         return {
             columns: ['TS', 'Host', 'Kind', 'Msg'],
-            //columns: ['ts', 'host', 'kind', 'msg'],
             url: "api/site/",
+            hostfilter: "",
         }
     },
     created: function() {
         this.loadData()
     },
     computed: {
-	    rows: function() {
+	    eventrows: function() {
+            if (this.hostfilter.length > 0) {
+                return this.searchData(this.$store.getters.updates).filter(u => u.Host == this.hostfilter);
+            }
             return this.searchData(this.$store.getters.updates);
 	    },
+        hostlist: function() {
+            return this.$store.getters.hostlist
+        },
     },
     methods: {
         loadData: function() {

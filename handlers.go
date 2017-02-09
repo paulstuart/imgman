@@ -176,8 +176,9 @@ func apiPXE(w http.ResponseWriter, r *http.Request) {
 		} else {
 			pxe.Device.Note = &msg
 		}
-		fmt.Println("GO EXEC")
-		pxeExec(pxe.Site, *pxe.Device.IPMI, pxe.Image)
+		//fmt.Println("GO EXEC")
+        ipmiHostSave(pxe.Device)
+		pxeExec(pxe.Site, *pxe.Device.Hostname, *pxe.Device.IPMI, pxe.Image)
 		sendJSON(w, pxe.Device)
 	}
 }
@@ -315,6 +316,10 @@ func apiEvents(w http.ResponseWriter, r *http.Request) {
 	dbStreamJSON(w, q)
 }
 
+func activeJSON(w http.ResponseWriter, r *http.Request) {
+		sendJSON(w, activeList())
+}
+
 var webHandlers = []hFunc{
 	{"/static/", StaticPage},
 	{"/api/audit/", MakeREST(audit{})},
@@ -330,5 +335,6 @@ var webHandlers = []hFunc{
 	{"/api/pings", bulkPings},
 	{"/api/pxeboot", apiPXE},
 	{"/api/user/", MakeREST(user{})},
+	{"/active", activeJSON},
 	{"/", homePage},
 }

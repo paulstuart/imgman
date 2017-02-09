@@ -1,3 +1,9 @@
+create table if not exists credentials (
+    ip text,
+    username text,
+    password text
+);
+create index if not exists credentials_ip on credentials(ip);
 
 drop table if exists sites;
 
@@ -78,7 +84,7 @@ END;
 DROP TABLE IF EXISTS real_events;
 CREATE TABLE real_events (
     ID integer primary key,
-    TS timestamp DEFAULT CURRENT_TIMESTAMP,
+    TS integer DEFAULT CURRENT_TIMESTAMP,
     Host text not null,
     Kind text,
     Msg text
@@ -93,7 +99,7 @@ create index real_events_ts on real_events(ts);
 
 DROP VIEW IF EXISTS events;
 CREATE VIEW events as select 
-   id, datetime(ts,'localtime') as ts, host, kind, msg
+   id, datetime(ts,'unixepoch', 'localtime') as ts, host, kind, msg
    from real_events 
    order by ts desc
    ;

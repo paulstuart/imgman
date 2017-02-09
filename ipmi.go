@@ -222,7 +222,7 @@ func findMAC(ipmi string) (string, error) {
 	if len(stdout) < 13 {
 		return "", ErrIncompleteIPMI
 	}
-	return strings.Replace(stdout[13:], " ", ":", -1), nil
+	return strings.TrimSpace(strings.Replace(stdout[13:], " ", ":", -1)), nil
 }
 
 func noCredentials() []string {

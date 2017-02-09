@@ -100,10 +100,6 @@ func userFromCookie(cookie string) user {
 	return *u
 }
 
-type credentials struct {
-	Username, Password string
-}
-
 func userAuth(username, password string) (*user, error) {
 	user, err := userByEmail(username)
 	if err != nil {
