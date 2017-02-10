@@ -25,7 +25,7 @@ case "$1" in
   start) MSG=BOOT ;;
   stop)  MSG=SHUTDOWN ;;
   *)
-    echo $"Usage: $0 {start|stop}"
+    echo "Usage: $0 {start|stop}"
     exit 1
     ;;
 esac
