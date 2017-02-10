@@ -1,0 +1,33 @@
+#! /bin/bash
+#
+# imgman_notify    Notify ImgMan of boot/shutdown events
+#
+# chkconfig: 345 99 1
+# description: This script will send a UDP packet informing the imaging server \
+#              that the host as booted or shut down.
+#
+# config: /etc/sysconfig/imgnotify
+
+# Source function library.
+. /etc/init.d/functions
+
+prog="imgman_notify"
+[ -f /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+IMGHOST=${IMGHOST:-127.0.0.1}
+IMGPORT=${IMGPORT:-9999}
+IMGMAC=$(ethtool -P eth0 | awk '{print $3}')
+
+unset MSG
+
+# See how we were called.
+case "$1" in
+  start) MSG=BOOT ;;
+  stop)  MSG=SHUTDOWN ;;
+  *)
+    echo $"Usage: $0 {start|stop}"
+    exit 1
+    ;;
+esac
+
+echo "- - $MSG $IMGMAC" > /dev/udp/$IMGHOST/$IMGPORT
