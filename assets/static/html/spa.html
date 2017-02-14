@@ -60,6 +60,7 @@
                 <li><router-link :to="{ path: '/site/list' }">Site List</router-link></li>
                 <li><router-link :to="{ path: '/admin/dcman' }">DCMan Settings</router-link></li>
                 <li><router-link :to="{ path: '/audit/log' }">Audit Log</router-link></li>
+                <li><a v-on:click.prevent="reloadMenus">Reload PXE Menus</a></li>
               </ul>
             </li>
           </ul>

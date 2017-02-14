@@ -266,6 +266,26 @@ func menuHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func menuRefresh(w http.ResponseWriter, r *http.Request) {
+	if sites, err := getSites(); err != nil {
+		jsonError(w, err, http.StatusInternalServerError)
+	} else {
+        for _, site := range sites {
+            if site.Name == nil || len(*site.Name) == 0 {
+                fmt.Println("No name for STI:", site.STI)
+                continue
+            }
+            name := *site.Name
+            host, ok := pxeHosts[name]
+            if !ok {
+                fmt.Printf("host not found for site:%s\n", name)
+                continue
+            }
+	        go refreshMenus(host)
+        }
+	}
+}
+
 func hostInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		var host = struct {
@@ -330,6 +350,7 @@ var webHandlers = []hFunc{
 	{"/api/mac/", ipmiMAC},
 	{"/api/host/", hostInfo},
 	{"/api/menus/", menuHandler},
+	{"/api/refresh", menuRefresh},
 	{"/api/site/", siteList},
 	{"/api/pxehost/", MakeREST(pxeHost{})},
 	{"/api/pings", bulkPings},

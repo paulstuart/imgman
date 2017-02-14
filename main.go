@@ -229,6 +229,11 @@ func getMenus(hostname string) []string {
 	if ok && len(m) > 0 {
 		return m
 	}
+    return refreshMenus(hostname)
+}
+
+func refreshMenus(hostname string) []string {
+    fmt.Println("refreshing menus for host:", hostname)
 	cmd := "pxemenu -m"
 	out, err := sshcmd(hostname, cmd, sshTimeout)
 	if err != nil {
@@ -323,7 +328,8 @@ func init() {
 	log.SetOutput(f)
 }
 
-func getSites() (interface{}, error) {
+//func getSites() (interface{}, error) {
+func getSites() ([]site, error) {
 	client := &http.Client{}
 
 	fmt.Println("URL:", dcmanURL)

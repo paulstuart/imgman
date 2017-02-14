@@ -385,7 +385,6 @@ var editVue = {
     }
 }
 
-
 // TODO: these should be generated from a factory function
 function getSiteLIST(all) {
     return get(sitesURL).then(function(result) {
@@ -447,6 +446,9 @@ Vue.component('main-menu', {
                 var user = JSON.parse(atob(tuple[1]));
                 break
             }
+        },
+        'reloadMenus': function() {
+            get("api/refresh")
         },
     }
 })
@@ -708,6 +710,7 @@ var pagedGrid = Vue.component("paged-grid", {
         limitBy: function() {
            var data = (this.rowsPerPage > 0) ? this.data.slice(this.currentRow, this.currentRow + this.rowsPerPage) : this.data;
            var orderBy = (this.sortOrders[this.sortKey] > 0) ? "asc" : "desc";
+           console.log("SORT KEY:",this.sortKey);
            return (this.sortKey.length > 0) ? _.orderBy(data, this.sortKey, orderBy) : data
         }
     },
